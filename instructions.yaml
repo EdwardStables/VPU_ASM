@@ -1,0 +1,100 @@
+instructions:
+  - name: MOV
+    ops:
+      - REG
+      - REG
+    desc: Move contents of REG to REG
+
+  - name: MOV
+    ops:
+      - REG
+      - IMM
+    desc: Load 16-bit immediate into REG
+
+  - name: MOV
+    ops:
+      - IMM
+    desc: Load 24-bit immediate into ACC
+
+  - name: ADD
+    ops:
+      - IMM
+    flags:
+      - O
+      - C
+    desc: Add immediate to ACC. Set O on overflow and C if result is 0.
+
+  - name: ADD
+    ops:
+      - REG
+    flags:
+      - O
+      - C
+    desc: Add value in REG to ACC. Set O on overflow and C if result is 0.
+
+  - name: ASR
+    ops:
+      - IMM
+    desc: Arithmetic shift right by IMM
+
+  - name: ASR
+    ops:
+      - REG
+    desc: Arithmetic shift right by value in REG
+
+  - name: LSR
+    ops:
+      - IMM
+    desc: Logical shift right by IMM
+
+  - name: LSR
+    ops:
+      - REG
+    desc: Logical shift right by value in REG
+
+  - name: LSL
+    ops:
+      - IMM
+    desc: Logical shift left by IMM
+
+  - name: LSL
+    ops:
+      - REG
+    desc: Logical shift left by value in REG
+
+  - name: CMP
+    ops:
+      - REG
+    flags:
+      - C
+    desc: Set C if REG is zero.
+
+  - name: JMP
+    ops:
+      - Label
+    desc: Change PC to Label.
+
+  - name: BRA
+    ops:
+      - Label
+    desc: Change PC to Label if C is set.
+
+  - name: LDW
+    ops:
+      - Label
+    desc: Load value from mem address Label to ACC.
+
+  - name: LDW
+    ops:
+      - REG
+    desc: Load value from mem address in REG to ACC.
+
+  - name: STW
+    ops:
+      - Label
+    desc: Store value from ACC to address Label.
+
+  - name: STW
+    ops:
+      - REG
+    desc: Store value from ACC to address in REG.
