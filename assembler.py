@@ -14,6 +14,10 @@ class SourceLine:
         self.file = file
         self.linenumber = linenumber
         self.source = source
+
+    def is_instr(self):
+        #Only valid to run once validate has correctly run
+        return self.source.startswith("    ")
     
     def validate(self):
         point, msg = self.validate_form()
@@ -62,16 +66,18 @@ class SourceLine:
             
 
 class ProgramInstruction:
-    def __init__(self, line: SourceLine, instrs: Instructions):
-        self.line = line
-        
+    def __init__(self, sourceline: SourceLine, instrs: Instructions):
+        self.sourceline = sourceline
 
+        #assume all inputs are well-formed instructions, not empty or labels
+        ops = [i for i in self.sourceline.source.split() if i]
+        print(self.sourceline.linenumber, ops)
 
 class Block:
     pass
 
 class Program:
-    def __init__(self, file: Path):
+    def __init__(self, file: Path, instrs: Instructions):
         self.file = file
         self.source_lines: list[SourceLine] = []
         with self.file.open() as f:
@@ -82,6 +88,11 @@ class Program:
                 if msg := sl.validate():
                     print(msg)
                 self.source_lines.append(sl)
+        
+        for sl in self.source_lines:
+            if not sl.is_instr(): continue
+            ProgramInstruction(sl, instrs)
+
 
 def get_args():
     parser = ArgumentParser()
@@ -95,7 +106,7 @@ def get_args():
 def main():
     args = get_args()
     instructions = Instructions(load_from_yaml(args.isa))
-    program = Program(Path(args.asm_file))
+    program = Program(Path(args.asm_file), instructions)
 
 if __name__ == "__main__":
     main()
