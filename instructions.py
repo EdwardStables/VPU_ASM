@@ -19,8 +19,9 @@ def load_from_yaml(path: str|Path) -> dict:
     return data
 
 class InstructionFormatException(Exception): pass
+class InvalidOpcodeException(InstructionFormatException): pass
 class InvalidOperandException(InstructionFormatException): pass
-class InvalidArgumentException(InstructionFormatException): pass
+class InvalidOperandNumberException(InvalidOperandException): pass
 class InstructionDefinition:
     def __init__ (self, name, ops, flags, desc, encoding):
         self.name = name
@@ -77,13 +78,18 @@ class ISADefinition:
             self.next_encoding += 1
 
     def match(self, opcode_str: str, *args) -> InstructionDefinition:
-        trial = []
+        trial: list[InstructionDefinition] = []
         for i in self.instructions:
             if i.name == opcode_str:
                 trial.append(i)
         
         if not trial:
-            raise InvalidOperandException
+            raise InvalidOpcodeException
+
+        trial = [t for t in trial if len(t.ops) == len(args)]
+
+        if not trial:
+            raise InvalidOperandNumberException
 
 
 

@@ -6,7 +6,8 @@ Does basic correctness checking, but nothing fancy.
 """
 
 from argparse import ArgumentParser
-from instructions import InstructionDefinition, ISADefinition, InvalidArgumentException, InvalidOperandException
+from instructions import InstructionDefinition, ISADefinition
+from instructions import InvalidOperandException, InvalidOpcodeException, InvalidOperandNumberException
 import instructions
 from pathlib import Path
 
@@ -21,9 +22,9 @@ class SourceLine:
         return self.source.startswith("    ")
     
     def validate(self):
-        point, msg = self.validate_form()
-        if point is not None and msg is not None:
-            return self.annotate(point=point, msg=msg)
+        index, msg = self.validate_form()
+        if index is not None and msg is not None:
+            return self.annotate(index=index, msg=msg)
         return None
 
     def validate_form(self):
@@ -50,7 +51,24 @@ class SourceLine:
     def validate_instruction_form(self):
         return None, None
 
-    def annotate(self, point=None, msg=None):
+    def annotate(self, index=None, operand_index=None, msg=None):
+        assert not (index and operand_index), "Cannot set both index and operand_index in an annotate call"
+        if operand_index is not None:
+            assert self.is_instr(), "Cannot set operand_index for non-instructions"
+            point = 4
+            seen = 0
+            last =  ""
+            for i in self.source[4:]:
+                if i != " " and last == " ": seen += 1
+                if seen==operand_index: break
+                last = i
+                point += 1
+                
+        elif index is not None:
+            point = index
+        else:
+            point = None        
+
         ret = f"{self.file}:{self.linenumber} "
         offset = len(ret)
         ret += self.source + "\n"
@@ -72,13 +90,15 @@ class ProgramInstruction:
         self.isa = isa
         #assume all inputs are well-formed instructions, not empty or labels
         self.ops = [i for i in self.sourceline.source.split() if i]
-        self._decode()
+        self._encode()
 
-    def _decode(self) -> bool:
+    def _encode(self) -> bool:
         try:
-            self.isa.match(self.ops[0], self.ops[1:])
-        except InvalidOperandException as e:
-            print(self.sourceline.annotate(4, f"Unknown opcode '{self.ops[0]}'"))
+            self.isa.match(self.ops[0], *self.ops[1:])
+        except InvalidOpcodeException as e:
+            print(self.sourceline.annotate(operand_index=0, msg=f"Unknown opcode '{self.ops[0]}'"))
+        except InvalidOperandNumberException as e:
+            print(self.sourceline.annotate(operand_index=1, msg=f"Invalid number of operands ({len(self.ops)-1}) for opcode {self.ops[0]}"))
 
 class Block:
     pass
