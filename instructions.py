@@ -18,7 +18,10 @@ def load_from_yaml(path: str|Path) -> dict:
 
     return data
 
-class Instruction:
+class InstructionFormatException(Exception): pass
+class InvalidOperandException(InstructionFormatException): pass
+class InvalidArgumentException(InstructionFormatException): pass
+class InstructionDefinition:
     def __init__ (self, name, ops, flags, desc, encoding):
         self.name = name
         self.ops = ops
@@ -27,11 +30,11 @@ class Instruction:
         self.encoding = encoding           
         self.internal_name = self.name + "_" + "_".join([o[0] for o in self.ops])
 
-class Instructions:
+class ISADefinition:
     def __init__(self, data: dict):
         
         self.next_encoding = 0
-        self.instructions: list[Instruction] = []
+        self.instructions: list[InstructionDefinition] = []
         self.valid_keys = ["name", "ops", "flags", "desc"]
         self.data = data
 
@@ -70,12 +73,23 @@ class Instructions:
             ops = instr.get("ops", []) 
             flags = instr.get("flags", [])
             desc = instr["desc"]
-            self.instructions.append(Instruction(name, ops, flags, desc, self.next_encoding))
+            self.instructions.append(InstructionDefinition(name, ops, flags, desc, self.next_encoding))
             self.next_encoding += 1
+
+    def match(self, opcode_str: str, *args) -> InstructionDefinition:
+        trial = []
+        for i in self.instructions:
+            if i.name == opcode_str:
+                trial.append(i)
+        
+        if not trial:
+            raise InvalidOperandException
+
+
 
 from jinja2 import Environment, BaseLoader
 class Formatter:
-    def __init__(self, instructions: Instructions):
+    def __init__(self, instructions: ISADefinition):
         self.instructions = instructions
     
     def render_cpp(self, output_file):
@@ -113,7 +127,7 @@ def main():
     args = parser.parse_args()
     
     instruction_dict = load_from_yaml(Path(args.definitions))
-    instructions = Instructions(instruction_dict)
+    instructions = ISADefinition(instruction_dict)
 
     formatter = Formatter(instructions)
     #if args.sv:

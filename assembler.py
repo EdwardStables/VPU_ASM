@@ -6,7 +6,8 @@ Does basic correctness checking, but nothing fancy.
 """
 
 from argparse import ArgumentParser
-from instructions import Instruction, Instructions, load_from_yaml
+from instructions import InstructionDefinition, ISADefinition, InvalidArgumentException, InvalidOperandException
+import instructions
 from pathlib import Path
 
 class SourceLine:
@@ -66,18 +67,24 @@ class SourceLine:
             
 
 class ProgramInstruction:
-    def __init__(self, sourceline: SourceLine, instrs: Instructions):
+    def __init__(self, sourceline: SourceLine, isa: ISADefinition):
         self.sourceline = sourceline
-
+        self.isa = isa
         #assume all inputs are well-formed instructions, not empty or labels
-        ops = [i for i in self.sourceline.source.split() if i]
-        print(self.sourceline.linenumber, ops)
+        self.ops = [i for i in self.sourceline.source.split() if i]
+        self._decode()
+
+    def _decode(self) -> bool:
+        try:
+            self.isa.match(self.ops[0], self.ops[1:])
+        except InvalidOperandException as e:
+            print(self.sourceline.annotate(4, f"Unknown opcode '{self.ops[0]}'"))
 
 class Block:
     pass
 
 class Program:
-    def __init__(self, file: Path, instrs: Instructions):
+    def __init__(self, file: Path, isa: ISADefinition):
         self.file = file
         self.source_lines: list[SourceLine] = []
         with self.file.open() as f:
@@ -91,7 +98,7 @@ class Program:
         
         for sl in self.source_lines:
             if not sl.is_instr(): continue
-            ProgramInstruction(sl, instrs)
+            ProgramInstruction(sl, isa)
 
 
 def get_args():
@@ -105,8 +112,8 @@ def get_args():
 
 def main():
     args = get_args()
-    instructions = Instructions(load_from_yaml(args.isa))
-    program = Program(Path(args.asm_file), instructions)
+    isa = ISADefinition(instructions.load_from_yaml(args.isa))
+    program = Program(Path(args.asm_file), isa)
 
 if __name__ == "__main__":
     main()
