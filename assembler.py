@@ -69,7 +69,7 @@ class SourceLine:
         else:
             point = None        
 
-        ret = f"{self.file}:{self.linenumber} "
+        ret = f"{self.file}:{self.linenumber+1} "
         offset = len(ret)
         ret += self.source + "\n"
         if point is not None or msg is not None:
@@ -93,12 +93,12 @@ class ProgramInstruction:
         self._encode()
 
     def _encode(self) -> bool:
-        try:
-            self.isa.match(self.ops[0], *self.ops[1:])
-        except InvalidOpcodeException as e:
-            print(self.sourceline.annotate(operand_index=0, msg=f"Unknown opcode '{self.ops[0]}'"))
-        except InvalidOperandNumberException as e:
-            print(self.sourceline.annotate(operand_index=1, msg=f"Invalid number of operands ({len(self.ops)-1}) for opcode {self.ops[0]}"))
+        valid, result = self.isa.match(self.ops[0], *self.ops[1:])
+        if not valid:
+            operand_index, msg = result
+            msg = self.sourceline.annotate(operand_index=operand_index, msg=msg)
+            print(msg)
+        
 
 class Block:
     pass
@@ -132,7 +132,11 @@ def get_args():
 
 def main():
     args = get_args()
-    isa = ISADefinition(instructions.load_from_yaml(args.isa))
+    try:
+        isa = ISADefinition(instructions.load_from_yaml(args.isa))
+    except instructions.InstructionFormatException:
+        print("Badly formed ISA file, exiting.")
+        exit(1)
     program = Program(Path(args.asm_file), isa)
 
 if __name__ == "__main__":

@@ -3,8 +3,16 @@
 Create definitions based off yaml file input. Used as library and standalone
 """
 
+from __future__ import annotations
 from yaml import safe_load
 from pathlib import Path
+from enum import IntEnum
+
+OPTYPES = ["IMM","REG","LAB"]
+class OperandType(IntEnum):
+    IMM=0
+    REG=1
+    LAB=2
 
 def load_from_yaml(path: str|Path) -> dict:
     if isinstance(path, str):
@@ -29,67 +37,132 @@ class InstructionDefinition:
         self.flags = flags
         self.desc = desc
         self.encoding = encoding           
-        self.internal_name = self.name + "_" + "_".join([o[0] for o in self.ops])
+        self.internal_name = self.name + "_" + "_".join([OPTYPES[o][0] for o in self.ops])
+
+    def __eq__(self, other: InstructionDefinition):
+        return self.name == other.name and self.ops == other.ops
 
 class ISADefinition:
     def __init__(self, data: dict):
         
         self.next_encoding = 0
         self.instructions: list[InstructionDefinition] = []
+        self.registers: list[str] = []
         self.valid_keys = ["name", "ops", "flags", "desc"]
         self.data = data
 
         valid, msg = self._validate_data()
         if not valid:
-            print(msg)
+            print("Error:", msg)
             raise Exception("Invalid input file")
 
-        self._parse()
+        valid, msg = self._parse()
+        if not valid:
+            print("Error:", msg)
+            raise Exception("Invalid input file")
 
     def _validate_data(self) -> tuple[bool,str]:
         """
         Validate the form of the data, does not do semantic checking
         """
-        if list(self.data.keys())[0] != "instructions":
-            return (False, f"Top level key was expected to be 'instructions', found {list(self.data.keys())[0]}")
+        if "instructions" not in self.data.keys():
+            return (False, f"Could not find top level key 'instructions'")
+        if "registers" not in self.data.keys():
+            return (False, f"Could not find top level key 'registers'")
         if not isinstance(self.data["instructions"], list):
             return (False, f"Expected value of 'instructions' to be a list, found {type(self.data['instructions'])}")
+        if not isinstance(self.data["registers"], list):
+            return (False, f"Expected value of 'registers' to be a list, found {type(self.data['registers'])}")
         
         for i, instr in enumerate(self.data["instructions"]):
             if not isinstance(instr, dict):
-                return (False, f"List entry {i}. Expected type of entry to be a dict, found {type(instr)}")
+                return (False, f"Instruction list entry {i}. Expected type of entry to be a dict, found {type(instr)}")
             for k, v in instr.items():
                 if k not in self.valid_keys:
-                    return (False, f"List entry {i}. Found invalid key '{k}'")
+                    return (False, f"Instruction list entry {i}. Found invalid key '{k}'")
             if "name" not in instr:
-                return (False, f"List entry {i}. Missing required key 'name'")
+                return (False, f"Instruction list entry {i}. Missing required key 'name'")
             if "desc" not in instr:
-                return (False, f"List entry {i}. Missing required key 'desc'")
+                return (False, f"Instruction list entry {i}. Missing required key 'desc'")
+            if "ops" in instr:
+                if not isinstance(instr["ops"], list):
+                    return (False, f"Instruction list entry {i}. Value of ops must be a list")
+                for op_ind, op in enumerate(instr["ops"]):
+                    if op not in OPTYPES:
+                        return (False, f"Instruction list entry {i}, op entry {op_ind}. {op} is not a valid operand type")
+
+        for i, reg in enumerate(self.data["registers"]):
+            if not isinstance(reg, str):
+                return (False, f"Register list entry {i}. Expected type of entry to be a str, found {type(reg)}")
 
         return (True,"")
 
     def _parse(self):
-        for instr in self.data["instructions"]:
+        for i, reg in enumerate(self.data["registers"]):
+            if reg in self.registers:
+                return (False, f"Register list entry {i} is duplicated.")
+            self.registers.append(reg)
+        for i, instr in enumerate(self.data["instructions"]):
             name = instr["name"]
-            ops = instr.get("ops", []) 
+            ops = []
+            for op in instr.get("ops", []):
+                if op == "REG": ops.append(OperandType.REG)
+                elif op == "LAB": ops.append(OperandType.LAB)
+                elif op == "IMM": ops.append(OperandType.IMM)
+
             flags = instr.get("flags", [])
             desc = instr["desc"]
-            self.instructions.append(InstructionDefinition(name, ops, flags, desc, self.next_encoding))
+            new_instr = InstructionDefinition(name, ops, flags, desc, self.next_encoding)
+            if new_instr in self.instructions:
+                return (False, f"Instruction list entry {i} is a duplicated definition.")
+            self.instructions.append(new_instr)
             self.next_encoding += 1
 
-    def match(self, opcode_str: str, *args) -> InstructionDefinition:
+        return True, ""
+
+    def match(self, opcode_str: str, *ops) -> InstructionDefinition:
         trial: list[InstructionDefinition] = []
         for i in self.instructions:
             if i.name == opcode_str:
                 trial.append(i)
         
         if not trial:
-            raise InvalidOpcodeException
+            return False, (0, f"Unknown opcode '{opcode_str}'")
 
-        trial = [t for t in trial if len(t.ops) == len(args)]
+        filtered_trial = [t for t in trial if len(t.ops) == len(ops)]
 
-        if not trial:
-            raise InvalidOperandNumberException
+        if not filtered_trial:
+            return False, (1, f"Invalid number of operands ({len(ops)}) for opcode {opcode_str}.")
+        trial = filtered_trial
+
+
+        optypes = [self.get_operand_type(o) for o in ops] 
+        filtered_trial = [t for t in trial if t.ops == optypes]
+
+        if not filtered_trial:
+            found = [OPTYPES[ot] for ot in optypes]
+            msg = f"Operand types do not match expected format for opcode {opcode_str}.\n"
+            expected = []
+            for exp in trial:
+                expected.append('['+(','.join([OPTYPES[ot] for ot in exp.ops])) + ']')
+            expected = " or ".join(expected)
+            msg += f"Got: [{','.join(found)}]. Expected {expected}"
+            return False, (1, msg)
+
+        return True, trial[0]
+
+
+        
+    def get_operand_type(self, operand: str) -> OperandType:
+        if operand in self.registers:
+            return OperandType.REG
+        if operand[0].isupper() and all(i.isdigit() or i.isupper() for i in operand):
+            return OperandType.LAB
+        if all(i.isdigit() for i in operand):
+            return OperandType.IMM
+        
+        raise InvalidOperandException
+        
 
 
 
@@ -133,7 +206,12 @@ def main():
     args = parser.parse_args()
     
     instruction_dict = load_from_yaml(Path(args.definitions))
-    instructions = ISADefinition(instruction_dict)
+    
+    try:
+        instructions = ISADefinition(instruction_dict)
+    except Exception:
+        exit(1)
+
 
     formatter = Formatter(instructions)
     #if args.sv:
