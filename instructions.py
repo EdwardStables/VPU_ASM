@@ -120,7 +120,7 @@ class ISADefinition:
 
         return True, ""
 
-    def match(self, opcode_str: str, *ops) -> InstructionDefinition:
+    def match(self, opcode_str: str, *ops) -> tuple[bool,tuple[int,str]|InstructionDefinition]:
         trial: list[InstructionDefinition] = []
         for i in self.instructions:
             if i.name == opcode_str:
@@ -136,7 +136,12 @@ class ISADefinition:
         trial = filtered_trial
 
 
-        optypes = [self.get_operand_type(o) for o in ops] 
+        try:
+            optypes = []
+            for i, o in enumerate(ops):
+                optypes.append(self.get_operand_type(o))
+        except InvalidOperandException:
+            return False, (i+1, f"Could not determine type of operand {o}")
         filtered_trial = [t for t in trial if t.ops == optypes]
 
         if not filtered_trial:
@@ -151,8 +156,6 @@ class ISADefinition:
 
         return True, trial[0]
 
-
-        
     def get_operand_type(self, operand: str) -> OperandType:
         if operand in self.registers:
             return OperandType.REG
@@ -162,10 +165,14 @@ class ISADefinition:
             return OperandType.IMM
         
         raise InvalidOperandException
+
+    def get_reg_encoding(self, reg: str) -> int:
+        try:
+            return self.registers.index(reg)
+        except ValueError:
+            print(f"Internal error, tried to look up encoding of unknown register {reg}. This should not happen.")
+            exit(1)
         
-
-
-
 from jinja2 import Environment, BaseLoader
 class Formatter:
     def __init__(self, instructions: ISADefinition):
