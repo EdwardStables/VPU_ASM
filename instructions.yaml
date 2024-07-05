@@ -1,3 +1,15 @@
+registers:
+  - ACC
+  - PC
+  - R1
+  - R2
+  - R3
+  - R4
+  - R5
+  - R6
+  - R7
+  - R8
+
 instructions:
   - name: MOV
     ops:
@@ -71,17 +83,17 @@ instructions:
 
   - name: JMP
     ops:
-      - Label
+      - LAB
     desc: Change PC to Label.
 
   - name: BRA
     ops:
-      - Label
+      - LAB
     desc: Change PC to Label if C is set.
 
   - name: LDW
     ops:
-      - Label
+      - LAB
     desc: Load value from mem address Label to ACC.
 
   - name: LDW
@@ -91,7 +103,7 @@ instructions:
 
   - name: STW
     ops:
-      - Label
+      - LAB
     desc: Store value from ACC to address Label.
 
   - name: STW
