@@ -98,12 +98,20 @@ class Program:
                 sl = SourceLine(self.file, i, line)
                 if msg := sl.validate():
                     print(msg)
-                self.source_lines.append(sl)
+                if sl.source:
+                    self.source_lines.append(sl)
         
         self.instructions = []
         error_count = 0
+        next_label_name = None
+        self.label_store = {}
         for sl in self.source_lines:
-            if not sl.is_instr(): continue
+            if not sl.is_instr():
+                next_label_name = sl.source[:-1] #hacky, but should be validated to this form already
+                if next_label_name in self.label_store:
+                    error_count+=1
+                    print(sl.annotate(index=0, msg=f"Invalid reuse of a label '{next_label_name}'"))
+                continue
             
             #Valid is bool.
             #Encoding is 1-4 entry list. Opcode, registers, and immediates are encoded.
@@ -111,7 +119,9 @@ class Program:
             valid, encoding, label_ref = self.get_encoding(sl)
             
             if valid:
-                self.instructions.append((sl,encoding,label_ref))
+                self.instructions.append((next_label_name,sl,encoding,label_ref))
+                self.label_store[next_label_name] = len(self.instructions)
+                next_label_name = None
             else:
                 error_count+=1
 
@@ -119,8 +129,12 @@ class Program:
                 print("Reached max error count, exiting.")
                 exit(1)
 
-        for sl, encoding, label_ref in self.instructions:
-            print(encoding, label_ref)
+        if error_count:
+            print("Encoding generation completed with errors, exiting.")
+            exit(1)
+
+        for label_name, sl, encoding, label_ref in self.instructions:
+            print(label_name, encoding, label_ref)
 
 
         
