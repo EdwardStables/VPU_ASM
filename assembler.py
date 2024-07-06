@@ -215,7 +215,7 @@ def main():
 
     with open(args.output, "wb") as f:
         for instr in program.output:
-            f.write(instr.to_bytes(4,'big'))
+            f.write(instr.to_bytes(4,'little'))
 
 if __name__ == "__main__":
     main()
