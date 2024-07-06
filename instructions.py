@@ -36,6 +36,7 @@ class InstructionDefinition:
     def __init__ (self, name, ops, flags, desc, encoding):
         self.name = name
         self.ops = ops
+        self.ops_str = [OPTYPES[i] for i in self.ops]
         self.flags = flags
         self.desc = desc
         self.encoding = encoding           
@@ -205,9 +206,10 @@ enum Instructions {
     def render_table(self, output_file):
         template_str = """| Name | Operands | Flags | Encoding | Description |
 | ---- | -------- | ----- | -------- | ----------- |
-{% for i in instructions %}| {{i.name}}   | {{", ".join(i.ops)}} | {{", ".join(i.flags)}} | {{i.encoding}} | {{i.desc}} |
+{% for i in instructions %}| {{i.name}}   | {{", ".join(i.ops_str)}} | {{", ".join(i.flags)}} | {{i.encoding}} | {{i.desc}} |
 {% endfor %}
 """
+        
         template = Environment(loader=BaseLoader).from_string(template_str) 
         data = template.render({"instructions":self.instructions.instructions})
 
