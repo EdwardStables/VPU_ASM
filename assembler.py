@@ -93,7 +93,9 @@ class Program:
         self.source_lines: list[SourceLine] = []
         with self.file.open() as f:
             for i, line in enumerate(f):
-                line = line[:line.find(";")]
+                comment = line.find(";")
+                if comment != -1:
+                    line = line[:line.find(";")]
                 line = line.rstrip()
                 sl = SourceLine(self.file, i, line)
                 if msg := sl.validate():
@@ -143,7 +145,7 @@ class Program:
             exit(1)
 
         #At this point we have confidence all instructions are well-formed and all labels are valid
-        output = []
+        self.output = []
         for label_name, sl, encoding, label_ref in self.instructions:
             val = 0
             total_width = 0
@@ -151,12 +153,7 @@ class Program:
                 val |= value << total_width
                 total_width += width
             assert total_width == 32
-            output.append(val)
-
-        for o in output:
-            print(hex(o))
-
-
+            self.output.append(val)
         
     def get_encoding(self, sourceline):
         #assume all inputs are well-formed instructions, not empty or labels
@@ -204,7 +201,7 @@ def get_args():
     parser.add_argument("asm_file", type=str, help="Input program")
     parser.add_argument("--isa", type=str, default=isa_file, help=f"Path to ISA file. Defaults to {isa_file}")
     parser.add_argument("--data", type=str, nargs="+", help="Input data file(s)")
-    parser.add_argument("-o", action="store_true", help="Output file name")
+    parser.add_argument("--output", "-o", type=str, help="Output file name", default="vpu.out")
     return parser.parse_args()
 
 def main():
@@ -215,6 +212,10 @@ def main():
         print("Badly formed ISA file, exiting.")
         exit(1)
     program = Program(Path(args.asm_file), isa)
+
+    with open(args.output, "wb") as f:
+        for instr in program.output:
+            f.write(instr.to_bytes(4,'big'))
 
 if __name__ == "__main__":
     main()
