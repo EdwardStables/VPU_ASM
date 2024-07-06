@@ -114,13 +114,14 @@ class Program:
                 continue
             
             #Valid is bool.
-            #Encoding is 1-4 entry list. Opcode, registers, and immediates are encoded.
+            #Encoding is 1-4 entry list. Each entry is (value, bitwidth). Opcode, registers, and immediates are encoded.
             #Label ref gives an index of the encoding that contains a label. 0 for none
             valid, encoding, label_ref = self.get_encoding(sl)
             
             if valid:
+                if next_label_name:
+                    self.label_store[next_label_name] = len(self.instructions)
                 self.instructions.append((next_label_name,sl,encoding,label_ref))
-                self.label_store[next_label_name] = len(self.instructions)
                 next_label_name = None
             else:
                 error_count+=1
@@ -129,12 +130,31 @@ class Program:
                 print("Reached max error count, exiting.")
                 exit(1)
 
+
+        for label_name, sl, encoding, label_ref in self.instructions:
+            if label_ref and encoding[label_ref][0] not in self.label_store:
+                print(sl.annotate(operand_index=label_ref, msg=f"Label {encoding[label_ref][0]} is used, but not defined anywhere in the program."))
+                error_count += 1
+            elif label_ref:
+                encoding[label_ref] = (self.label_store[encoding[label_ref][0]],encoding[label_ref][1])
+
         if error_count:
             print("Encoding generation completed with errors, exiting.")
             exit(1)
 
+        #At this point we have confidence all instructions are well-formed and all labels are valid
+        output = []
         for label_name, sl, encoding, label_ref in self.instructions:
-            print(label_name, encoding, label_ref)
+            val = 0
+            total_width = 0
+            for (value, width) in encoding[::-1]:
+                val |= value << total_width
+                total_width += width
+            assert total_width == 32
+            output.append(val)
+
+        for o in output:
+            print(hex(o))
 
 
         
@@ -150,16 +170,32 @@ class Program:
 
         instr_def = result
         label_index = 0
-        encoding = [instr_def.encoding] 
+        encoding = [(instr_def.encoding,8)] 
         for i, o in enumerate(instr_def.ops):
             match o:
                 case instructions.OperandType.REG:
-                    encoding.append(self.isa.get_reg_encoding(ops[i+1]))
-                case instructions.OperandType.IMM:
-                    encoding.append(int(ops[i+1]))
+                    encoding.append((self.isa.get_reg_encoding(ops[i+1]),8))
                 case instructions.OperandType.LAB:
-                    encoding.append(ops[i+1])
+                    encoding.append((ops[i+1],24)) #Labels are always 24 bits
                     label_index = i+1
+                case instructions.OperandType.IMM16:
+                    value = int(ops[i+1])
+                    width = 16
+                    if value >= 2**width:
+                        msg = f"Literal value {value} is too big for 16-bit literal."
+                        msg = sourceline.annotate(operand_index=operand_index, msg=msg)
+                        print(msg)
+                        return False, None, None
+                    encoding.append((value,width))
+                case instructions.OperandType.IMM24:
+                    value = int(ops[i+1])
+                    width = 24
+                    if value >= 2**width:
+                        msg = f"Literal value {value} is too big for 24-bit literal."
+                        msg = sourceline.annotate(operand_index=operand_index, msg=msg)
+                        print(msg)
+                        return False, None, None
+                    encoding.append((value,width))
         return True, encoding, label_index
 
 def get_args():
