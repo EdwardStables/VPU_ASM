@@ -8,11 +8,13 @@ from yaml import safe_load
 from pathlib import Path
 from enum import IntEnum
 
-OPTYPES = ["IMM","REG","LAB"]
+OPTYPES = ["REG","LAB","IMM","IMM16","IMM24"]
 class OperandType(IntEnum):
-    IMM=0
-    REG=1
-    LAB=2
+    REG=0
+    LAB=1
+    IMM=2 #invalid in specification, given as general parsing type for 16/24
+    IMM16=3
+    IMM24=4
 
 def load_from_yaml(path: str|Path) -> dict:
     if isinstance(path, str):
@@ -108,7 +110,10 @@ class ISADefinition:
             for op in instr.get("ops", []):
                 if op == "REG": ops.append(OperandType.REG)
                 elif op == "LAB": ops.append(OperandType.LAB)
-                elif op == "IMM": ops.append(OperandType.IMM)
+                elif op == "IMM": 
+                    return (False, f"Instruction list entry i specifies an IMM operand which is not legal.")
+                elif op == "IMM16": ops.append(OperandType.IMM16)
+                elif op == "IMM24": ops.append(OperandType.IMM24)
 
             flags = instr.get("flags", [])
             desc = instr["desc"]
@@ -142,7 +147,12 @@ class ISADefinition:
                 optypes.append(self.get_operand_type(o))
         except InvalidOperandException:
             return False, (i+1, f"Could not determine type of operand {o}")
-        filtered_trial = [t for t in trial if t.ops == optypes]
+        
+        def check_equality(ref, test):
+            _ref = [OperandType.IMM if i in (OperandType.IMM24,OperandType.IMM16) else i for i in ref]
+            return _ref == test
+
+        filtered_trial = [t for t in trial if check_equality(t.ops, optypes)]
 
         if not filtered_trial:
             found = [OPTYPES[ot] for ot in optypes]
