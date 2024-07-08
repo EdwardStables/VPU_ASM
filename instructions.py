@@ -206,7 +206,7 @@ class Formatter:
 
         imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")
         imp_data = imp_template.render({
-            "output_file": output_file,
+            "header": Path(output_file).stem,
             "instructions": self.instructions.instructions,
             "namespace": namespace,
             "warning": warning,
