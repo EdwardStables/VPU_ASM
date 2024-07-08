@@ -4,6 +4,7 @@ Create definitions based off yaml file input. Used as library and standalone
 """
 
 from __future__ import annotations
+from dataclasses import dataclass
 from yaml import safe_load
 from pathlib import Path
 from enum import IntEnum
@@ -36,7 +37,6 @@ class InstructionDefinition:
     def __init__ (self, name, ops, flags, desc, encoding):
         self.name = name
         self.ops = ops
-        self.ops_str = [OPTYPES[i] for i in self.ops]
         self.flags = flags
         self.desc = desc
         self.encoding = encoding           
@@ -204,14 +204,36 @@ enum Instructions {
         print(data)
 
     def render_table(self, output_file):
-        template_str = """| Name | Operands | Flags | Encoding | Description |
-| ---- | -------- | ----- | -------- | ----------- |
-{% for i in instructions %}| {{i.name}}   | {{", ".join(i.ops_str)}} | {{", ".join(i.flags)}} | {{i.encoding}} | {{i.desc}} |
-{% endfor %}
-"""
+
+        disp_instrs = []
+        headers = [" Name ", " Operands ", " Flags ", " Encoding ", " Description "]
+        max_widths = [len(h) for h in headers]
+
+        disp_instrs = []
+        for i in self.instructions.instructions:
+            line = [i.name, ','.join([OPTYPES[o] for o in i.ops]), ",".join(i.flags), hex(i.encoding), i.desc]
+            line = [" "+c+" " for c in line]
+            disp_instrs.append(line) 
         
-        template = Environment(loader=BaseLoader).from_string(template_str) 
-        data = template.render({"instructions":self.instructions.instructions})
+        for line in disp_instrs:
+            for i,l in enumerate(line):
+                max_widths[i] = max(max_widths[i],len(l))
+
+        for line in disp_instrs:
+            for i,l in enumerate(line):
+                l = l + " "*(max_widths[i]-len(l))
+                line[i] = l
+
+        for i,h in enumerate(headers):
+            h = h + " "*(max_widths[i]-len(h))
+            headers[i] = h    
+
+
+        data = "|" + "|".join(headers) + "|\n"
+        sep = ["-"*len(h) for h in headers]
+        data += "|" + "|".join(sep) + "|\n"
+        for i in disp_instrs:
+            data += "|" + "|".join(i) + "|\n"
 
         print(data)
 
