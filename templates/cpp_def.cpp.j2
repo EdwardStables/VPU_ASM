@@ -1,0 +1,14 @@
+#include "{{output_file}}.h"
+{{ warning }}
+
+{% if namespace != "" %}
+namespace {{namespace}} {
+{% endif %}
+
+Instruction get_instr(uint32_t instr) {
+    return (Instruction)(instr >> 24);
+}
+
+{% if namespace != "" %}
+}
+{% endif %}

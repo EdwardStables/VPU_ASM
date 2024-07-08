@@ -184,10 +184,11 @@ class ISADefinition:
             print(f"Internal error, tried to look up encoding of unknown register {reg}. This should not happen.")
             exit(1)
         
-from jinja2 import Environment, BaseLoader
+from jinja2 import Environment, FileSystemLoader
 class Formatter:
-    def __init__(self, instructions: ISADefinition):
+    def __init__(self, instructions: ISADefinition, template_path: Path):
         self.instructions = instructions
+        self.template_path = template_path
     
     def render_cpp(self, output_file, namespace):
         warning = """
@@ -196,66 +197,25 @@ class Formatter:
 //************************************************//
 """        
 
-
-        header_template_str = """#pragma once
-{{ warning }}
-
-#include <cstdint>
-
-{% if namespace != "" %}
-namespace {{namespace}} {
-{% endif %}
-
-enum Instruction {
-{% for i in instructions %} {{i.internal_name}} = {{i.encoding}},
-{% endfor %}
-};
-
-Instruction get_instr(uint32_t instr);
-
-{% if namespace != "" %}
-}
-{% endif %}
-
-"""
-        header_template = Environment(loader=BaseLoader).from_string(header_template_str) 
+        header_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.h.j2")
         header_data = header_template.render({
-            "instructions":self.instructions.instructions,
+            "instructions": self.instructions.instructions,
+            "namespace": namespace,
+            "warning": warning,
+        })
+
+        imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")
+        imp_data = imp_template.render({
+            "output_file": output_file,
+            "instructions": self.instructions.instructions,
             "namespace": namespace,
             "warning": warning,
         })
 
         with open(output_file+".h", "w") as f:
             f.write(header_data)
-
-        imp_template_str = """#include "{{output_file}}.h"
-{{ warning }}
-
-{% if namespace != "" %}
-namespace {{namespace}} {
-{% endif %}
-
-Instruction get_instr(uint32_t instr) {
-    return (Instruction)(instr >> 24);
-}
-
-{% if namespace != "" %}
-}
-{% endif %}
-"""
-        imp_template = Environment(loader=BaseLoader).from_string(imp_template_str) 
-        imp_data = imp_template.render({
-            "output_file":output_file,
-            "instructions":self.instructions.instructions,
-            "namespace": namespace,
-            "warning": warning,
-        })
-
         with open(output_file+".cpp", "w") as f:
             f.write(imp_data)
-
-
-
 
     def render_table(self, output_file):
 
@@ -296,9 +256,10 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("definitions", type=str, help="YAML file with instruction definitions")
     parser.add_argument("--sv", action="store_true", help="Generate SystemVerilog defs")
-    parser.add_argument("--cpp", nargs="?", default="defs_pkg", help="Generate C++ defs")
+    parser.add_argument("--cpp", nargs="?", const="defs_pkg", help="Generate C++ defs")
     parser.add_argument("--namespace", type=str, default="vpu::defs", help="C++ namespace to use. Defaults to vpu::defs")
     parser.add_argument("--table", action="store_true", help="Generate markdown formatted table")
+    parser.add_argument("--templates", type=str, help="Give path to templates directory")
     args = parser.parse_args()
     
     instruction_dict = load_from_yaml(Path(args.definitions))
@@ -309,7 +270,19 @@ def main():
         exit(1)
 
 
-    formatter = Formatter(instructions)
+    if not args.templates:
+        templates = Path(__file__).parent.resolve()/"templates"
+    else:
+        templates = Path(args.templates)
+
+    if not templates.exists():
+        print(f"Could not find templates directory {templates}")
+        exit(1)
+    if not templates.is_dir():
+        print(f"Templates path {templates} exists but is not directory ")
+        exit(1)
+
+    formatter = Formatter(instructions, templates)
     #if args.sv:
     #    formatter.render_sv("defs_pkg.sv")
 

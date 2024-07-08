@@ -1,0 +1,19 @@
+#pragma once
+{{ warning }}
+
+#include <cstdint>
+
+{% if namespace != "" %}
+namespace {{namespace}} {
+{% endif %}
+
+enum Instruction {
+{% for i in instructions %} {{i.internal_name}} = {{i.encoding}},
+{% endfor %}
+};
+
+Instruction get_instr(uint32_t instr);
+
+{% if namespace != "" %}
+}
+{% endif %}
