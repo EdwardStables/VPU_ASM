@@ -15,7 +15,7 @@ instructions:
     desc: No operation
 
   - name: HLT
-    desc: Halt execution at this point 
+    desc: Halt execution at this point
 
   - name: MOV
     ops:
