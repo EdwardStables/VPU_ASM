@@ -42,7 +42,7 @@ class InstructionDefinition:
         self.encoding = encoding           
         self.internal_name = self.name
         if self.ops: 
-            self.internal_name += "_" + "_".join([OPTYPES[o][0] for o in self.ops])
+            self.internal_name += "_" + "_".join([OPTYPES[o][0]+OPTYPES[o][3:5] for o in self.ops])
 
     def __eq__(self, other: InstructionDefinition):
         return self.name == other.name and self.ops == other.ops
