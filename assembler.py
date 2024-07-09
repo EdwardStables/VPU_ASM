@@ -152,7 +152,7 @@ class Program:
             for (value, width) in encoding[::-1]:
                 val |= value << total_width
                 total_width += width
-            assert total_width == 32
+            assert total_width == 32, f"{sl.file}:{sl.linenumber+1} Got total width of {total_width}"
             self.output.append(val)
 
         #Program region marker
@@ -196,6 +196,13 @@ class Program:
                         print(msg)
                         return False, None, None
                     encoding.append((value,width))
+                case _:
+                    assert False, "Unexpected operand value"
+
+        #Required for standalone instructions
+        if not instr_def.ops:
+            encoding.append((0,24))
+
         return True, encoding, label_index
 
 def get_args():
