@@ -11,6 +11,12 @@ registers:
   - R8
 
 instructions:
+  - name: NOP
+    desc: No operation
+
+  - name: HLT
+    desc: Halt execution at this point 
+
   - name: MOV
     ops:
       - REG
