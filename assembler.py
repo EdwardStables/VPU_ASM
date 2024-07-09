@@ -138,7 +138,8 @@ class Program:
                 print(sl.annotate(operand_index=label_ref, msg=f"Label {encoding[label_ref][0]} is used, but not defined anywhere in the program."))
                 error_count += 1
             elif label_ref:
-                encoding[label_ref] = (self.label_store[encoding[label_ref][0]],encoding[label_ref][1])
+                #mult by 4 to account for alignment
+                encoding[label_ref] = (4*self.label_store[encoding[label_ref][0]],encoding[label_ref][1])
 
         if error_count:
             print("Encoding generation completed with errors, exiting.")
