@@ -154,6 +154,9 @@ class Program:
                 total_width += width
             assert total_width == 32
             self.output.append(val)
+
+        #Program region marker
+        self.output.append(0xFFFFFFFF)
         
     def get_encoding(self, sourceline):
         #assume all inputs are well-formed instructions, not empty or labels
