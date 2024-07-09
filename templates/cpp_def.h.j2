@@ -2,17 +2,28 @@
 {{ warning }}
 
 #include <cstdint>
+#include <string>
 
 {% if namespace != "" %}
 namespace {{namespace}} {
 {% endif %}
 
-enum Instruction {
-{% for i in instructions %} {{i.internal_name}} = {{i.encoding}},
-{% endfor %}
+const uint32_t REGISTER_COUNT = {{registers|length}};
+
+enum Instruction { {% for i in instructions %}
+    {{i.internal_name}} = {{i.encoding}},{% endfor %}
+};
+
+enum Register { {% for r in registers %}
+    {{r}} = {{loop.index}},{% endfor %}
 };
 
 Instruction get_instr(uint32_t instr);
+std::string instr_to_string(Instruction instr);
+uint32_t get_label(uint32_t instr);
+uint32_t get_u24(uint32_t instr);
+uint16_t get_u16(uint32_t instr);
+Register get_register(uint32_t instr, uint8_t index);
 
 {% if namespace != "" %}
 }

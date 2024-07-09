@@ -1,12 +1,38 @@
 #include "{{header}}.h"
+#include <assert.h>
 {{ warning }}
 
 {% if namespace != "" %}
 namespace {{namespace}} {
-{% endif %}
+{% endif %} 
 
 Instruction get_instr(uint32_t instr) {
     return (Instruction)(instr >> 24);
+}
+
+std::string instr_to_string(Instruction instr) {
+    switch(instr) { {% for i in instructions %}
+        case {{i.internal_name}}: return "{{i.internal_name}}";{% endfor %}
+        default: assert(false);
+    }
+}
+
+uint32_t get_label(uint32_t instr) {
+    return 0xFFFFFF & instr;
+}
+
+uint32_t get_u24(uint32_t instr) {
+    return 0xFFFFFF & instr;
+}
+
+uint16_t get_u16(uint32_t instr) {
+    return 0xFFFF & instr;
+}
+
+//Index from left to right
+Register get_register(uint32_t instr, uint8_t index) {
+    assert((0 <= index) && (index < 3));
+    return (Register)(0xFF & (instr >> (2-index)));
 }
 
 {% if namespace != "" %}

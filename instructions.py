@@ -40,7 +40,9 @@ class InstructionDefinition:
         self.flags = flags
         self.desc = desc
         self.encoding = encoding           
-        self.internal_name = self.name + "_" + "_".join([OPTYPES[o][0] for o in self.ops])
+        self.internal_name = self.name
+        if self.ops: 
+            self.internal_name += "_" + "_".join([OPTYPES[o][0] for o in self.ops])
 
     def __eq__(self, other: InstructionDefinition):
         return self.name == other.name and self.ops == other.ops
@@ -199,17 +201,18 @@ class Formatter:
 
         header_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.h.j2")
         header_data = header_template.render({
-            "instructions": self.instructions.instructions,
-            "namespace": namespace,
             "warning": warning,
+            "namespace": namespace,
+            "instructions": self.instructions.instructions,
+            "registers": self.instructions.registers,
         })
 
         imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")
         imp_data = imp_template.render({
+            "warning": warning,
+            "namespace": namespace,
             "header": Path(output_file).stem,
             "instructions": self.instructions.instructions,
-            "namespace": namespace,
-            "warning": warning,
         })
 
         with open(output_file+".h", "w") as f:
