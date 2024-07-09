@@ -1,5 +1,3 @@
-;comment
-LABEL:
-    MOV 12
-    ADD 11 ;comment
-    JMP LABEL
+    MOV 10
+    ADD 1
+    HLT
