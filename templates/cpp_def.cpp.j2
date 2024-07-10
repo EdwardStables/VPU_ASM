@@ -10,6 +10,13 @@ Opcode get_opcode(uint32_t instr) {
     return (Opcode)(instr >> 24);
 }
 
+std::string register_to_string(Register reg) {
+    switch(reg) { {% for r in registers %}
+        case {{loop.index0}}: return "{{r}}";{% endfor %}
+        default: assert(false);
+    }
+}
+
 std::string opcode_to_string(Opcode opcode) {
     switch(opcode) { {% for i in instructions %}
         case {{i.internal_name}}: return "{{i.internal_name}}";{% endfor %}

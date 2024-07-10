@@ -16,11 +16,12 @@ enum Opcode { {% for i in instructions %}
 };
 
 enum Register { {% for r in registers %}
-    {{r}} = {{loop.index}},{% endfor %}
+    {{r}} = {{loop.index0}},{% endfor %}
 };
 
 Opcode get_opcode(uint32_t instr);
 std::string opcode_to_string(Opcode opcode);
+std::string register_to_string(Register reg);
 uint32_t get_label(uint32_t instr);
 uint32_t get_u24(uint32_t instr);
 uint16_t get_u16(uint32_t instr);

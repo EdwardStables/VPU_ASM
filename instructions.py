@@ -213,6 +213,7 @@ class Formatter:
             "namespace": namespace,
             "header": Path(output_file).stem,
             "instructions": self.instructions.instructions,
+            "registers": self.instructions.registers,
         })
 
         with open(output_file+".h", "w") as f:
