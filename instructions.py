@@ -167,7 +167,7 @@ class ISADefinition:
             msg += f"Got: [{','.join(found)}]. Expected {expected}"
             return False, (1, msg)
 
-        return True, trial[0]
+        return True, filtered_trial[0]
 
     def get_operand_type(self, operand: str) -> OperandType:
         if operand in self.registers:

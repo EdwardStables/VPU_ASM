@@ -203,6 +203,8 @@ class Program:
         #Required for standalone instructions
         if not instr_def.ops:
             encoding.append((0,24))
+        if instr_def.ops == [instructions.OperandType.REG,instructions.OperandType.REG]:
+            encoding.append((0,8))
 
         return True, encoding, label_index
 

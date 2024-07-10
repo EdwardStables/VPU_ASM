@@ -87,6 +87,14 @@ instructions:
       - C
     desc: Set C if REG is zero.
 
+  - name: CMP
+    ops:
+      - REG
+      - REG
+    flags:
+      - C
+    desc: Set C if values in operand registers are equal
+
   - name: JMP
     ops:
       - LAB
