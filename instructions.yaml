@@ -10,6 +10,12 @@ registers:
   - R7
   - R8
 
+flags:
+  - flag: C
+    name: Compare
+  - flag: O
+    name: Overflow
+
 instructions:
   - name: NOP
     desc: No operation

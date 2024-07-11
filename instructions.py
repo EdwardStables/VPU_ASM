@@ -52,6 +52,7 @@ class ISADefinition:
         
         self.next_encoding = 0
         self.instructions: list[InstructionDefinition] = []
+        self.flags: list[str] = []
         self.registers: list[str] = []
         self.valid_keys = ["name", "ops", "flags", "desc"]
         self.data = data
@@ -74,11 +75,26 @@ class ISADefinition:
             return (False, f"Could not find top level key 'instructions'")
         if "registers" not in self.data.keys():
             return (False, f"Could not find top level key 'registers'")
-        if not isinstance(self.data["instructions"], list):
-            return (False, f"Expected value of 'instructions' to be a list, found {type(self.data['instructions'])}")
+        if "flags" not in self.data.keys():
+            return (False, f"Could not find top level key 'flags'")
+
         if not isinstance(self.data["registers"], list):
             return (False, f"Expected value of 'registers' to be a list, found {type(self.data['registers'])}")
-        
+        if not isinstance(self.data["flags"], list):
+            return (False, f"Expected value of 'flags' to be a list, found {type(self.data['flags'])}")
+        if not isinstance(self.data["instructions"], list):
+            return (False, f"Expected value of 'instructions' to be a list, found {type(self.data['instructions'])}")
+
+        for i, reg in enumerate(self.data["registers"]):
+            if not isinstance(reg, str):
+                return (False, f"Register list entry {i}. Expected type of entry to be a str, found {type(reg)}")
+        for i, flag in enumerate(self.data["flags"]):
+            if not isinstance(flag, dict):
+                return (False, f"Flag list entry {i}. Expected type of entry to be a dict, found {type(instr)}")
+            if "flag" not in flag:
+                return (False, f"Flag list entry {i}. Missing required key 'flag'")
+            if "name" not in flag:
+                return (False, f"Flag list entry {i}. Missing required key 'name'")
         for i, instr in enumerate(self.data["instructions"]):
             if not isinstance(instr, dict):
                 return (False, f"Instruction list entry {i}. Expected type of entry to be a dict, found {type(instr)}")
@@ -96,10 +112,6 @@ class ISADefinition:
                     if op not in OPTYPES:
                         return (False, f"Instruction list entry {i}, op entry {op_ind}. {op} is not a valid operand type")
 
-        for i, reg in enumerate(self.data["registers"]):
-            if not isinstance(reg, str):
-                return (False, f"Register list entry {i}. Expected type of entry to be a str, found {type(reg)}")
-
         return (True,"")
 
     def _parse(self):
@@ -107,6 +119,11 @@ class ISADefinition:
             if reg in self.registers:
                 return (False, f"Register list entry {i} is duplicated.")
             self.registers.append(reg)
+        for i, flag in enumerate(self.data["flags"]):
+            flag = flag["flag"]
+            if flag in self.flags:
+                return (False, f"Flag list entry {i} is duplicated.")
+            self.flags.append(flag)
         for i, instr in enumerate(self.data["instructions"]):
             name = instr["name"]
             ops = []
@@ -119,6 +136,10 @@ class ISADefinition:
                 elif op == "IMM24": ops.append(OperandType.IMM24)
 
             flags = instr.get("flags", [])
+            for f in flags:
+                if f not in self.flags:
+                    return (False, f"Instruction list entry {i} uses unknown flag {f}.")
+
             desc = instr["desc"]
             new_instr = InstructionDefinition(name, ops, flags, desc, self.next_encoding)
             if new_instr in self.instructions:
@@ -205,6 +226,7 @@ class Formatter:
             "namespace": namespace,
             "instructions": self.instructions.instructions,
             "registers": self.instructions.registers,
+            "flags": self.instructions.flags,
         })
 
         imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")
@@ -214,6 +236,7 @@ class Formatter:
             "header": Path(output_file).stem,
             "instructions": self.instructions.instructions,
             "registers": self.instructions.registers,
+            "flags": self.instructions.flags,
         })
 
         with open(output_file+".h", "w") as f:

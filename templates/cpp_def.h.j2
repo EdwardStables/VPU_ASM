@@ -9,18 +9,25 @@ namespace {{namespace}} {
 {% endif %}
 
 const uint32_t REGISTER_COUNT = {{registers|length}};
+const uint32_t FLAG_COUNT = {{flags|length}};
 const uint32_t SEGMENT_END = 0xFFFFFFFF;
-
-enum Opcode { {% for i in instructions %}
-    {{i.internal_name}} = {{i.encoding}},{% endfor %}
-};
 
 enum Register { {% for r in registers %}
     {{r}} = {{loop.index0}},{% endfor %}
 };
 
+enum Flag { {% for f in flags %}
+    {{f}} = {{loop.index0}},{% endfor %}
+};
+
+
+enum Opcode { {% for i in instructions %}
+    {{i.internal_name}} = {{i.encoding}},{% endfor %}
+};
+
 Opcode get_opcode(uint32_t instr);
 std::string opcode_to_string(Opcode opcode);
+std::string flag_to_string(Flag flag);
 std::string register_to_string(Register reg);
 uint32_t get_label(uint32_t instr);
 uint32_t get_u24(uint32_t instr);

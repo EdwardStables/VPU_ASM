@@ -17,6 +17,13 @@ std::string register_to_string(Register reg) {
     }
 }
 
+std::string flag_to_string(Flag flag) {
+    switch(flag) { {% for f in flags %}
+        case {{loop.index0}}: return "{{f}}";{% endfor %}
+        default: assert(false);
+    }
+}
+
 std::string opcode_to_string(Opcode opcode) {
     switch(opcode) { {% for i in instructions %}
         case {{i.internal_name}}: return "{{i.internal_name}}";{% endfor %}
@@ -39,7 +46,7 @@ uint16_t get_u16(uint32_t instr) {
 //Index from left to right
 Register get_register(uint32_t instr, uint8_t index) {
     assert((0 <= index) && (index < 3));
-    return (Register)(0xFF & (instr >> (2-index)));
+    return (Register)(0xFF & (instr >> 8*(2-index)));
 }
 
 {% if namespace != "" %}
