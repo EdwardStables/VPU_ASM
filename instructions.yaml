@@ -1,6 +1,6 @@
 registers:
-  - ACC
   - PC
+  - ACC
   - R1
   - R2
   - R3
