@@ -219,6 +219,11 @@ def get_args():
     parser.add_argument("--output", "-o", type=str, help="Output file name", default="vpu.out")
     return parser.parse_args()
 
+def write_out(program: Program, path: Path):
+    with path.open("wb") as f:
+        for instr in program.output:
+            f.write(instr.to_bytes(4,'little'))
+
 def main():
     args = get_args()
     try:
@@ -227,10 +232,7 @@ def main():
         print("Badly formed ISA file, exiting.")
         exit(1)
     program = Program(Path(args.asm_file), isa)
-
-    with open(args.output, "wb") as f:
-        for instr in program.output:
-            f.write(instr.to_bytes(4,'little'))
+    write_out(program, Path(args.output))
 
 if __name__ == "__main__":
     main()
