@@ -6,3 +6,4 @@
     MOV R8 2
     LSL R8
     MOV R2 ACC
+    HLT

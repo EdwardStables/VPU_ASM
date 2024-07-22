@@ -15,3 +15,4 @@
     MOV R8 1
     LSR R8
     MOV R4 ACC
+    HLT
