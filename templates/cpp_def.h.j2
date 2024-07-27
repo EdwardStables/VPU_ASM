@@ -11,6 +11,7 @@ namespace {{namespace}} {
 const uint32_t REGISTER_COUNT = {{registers|length}};
 const uint32_t FLAG_COUNT = {{flags|length}};
 const uint32_t SEGMENT_END = 0xFFFFFFFF;
+const uint32_t MAX_OPCODE_LEN = {{max_opcode_len}};
 
 enum Register { {% for r in registers %}
     {{r}} = {{loop.index0}},{% endfor %}
@@ -27,6 +28,7 @@ enum Opcode { {% for i in instructions %}
 
 Opcode get_opcode(uint32_t instr);
 std::string opcode_to_string(Opcode opcode);
+std::string opcode_to_string_fixed(Opcode opcode);
 std::string flag_to_string(Flag flag);
 std::string register_to_string(Register reg);
 uint32_t get_label(uint32_t instr);

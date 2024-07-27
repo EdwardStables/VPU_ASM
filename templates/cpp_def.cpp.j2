@@ -24,6 +24,13 @@ std::string flag_to_string(Flag flag) {
     }
 }
 
+std::string opcode_to_string_fixed(Opcode opcode) {
+    std::string base = opcode_to_string(opcode);
+    assert(base.size() <= MAX_OPCODE_LEN);
+    base.insert(0, MAX_OPCODE_LEN - base.size(), ' ');
+    return base;
+}
+
 std::string opcode_to_string(Opcode opcode) {
     switch(opcode) { {% for i in instructions %}
         case {{i.internal_name}}: return "{{i.internal_name}}";{% endfor %}

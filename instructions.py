@@ -225,6 +225,7 @@ class Formatter:
             "warning": warning,
             "namespace": namespace,
             "instructions": self.instructions.instructions,
+            "max_opcode_len": max([len(i.internal_name) for i in self.instructions.instructions]),
             "registers": self.instructions.registers,
             "flags": self.instructions.flags,
         })
