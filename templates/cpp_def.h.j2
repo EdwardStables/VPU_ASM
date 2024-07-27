@@ -12,6 +12,7 @@ const uint32_t REGISTER_COUNT = {{registers|length}};
 const uint32_t FLAG_COUNT = {{flags|length}};
 const uint32_t SEGMENT_END = 0xFFFFFFFF;
 const uint32_t MAX_OPCODE_LEN = {{max_opcode_len}};
+const std::string SEGMENT_END_WIDTH_STRING = "  SEG_END"; //assumes no change to max_opcode_len of 9
 
 enum Register { {% for r in registers %}
     {{r}} = {{loop.index0}},{% endfor %}
