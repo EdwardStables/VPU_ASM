@@ -13,6 +13,13 @@ const uint32_t FLAG_COUNT = {{flags|length}};
 const uint32_t SEGMENT_END = 0xFFFFFFFF;
 const uint32_t MAX_OPCODE_LEN = {{max_opcode_len}};
 const std::string SEGMENT_END_WIDTH_STRING = "  SEG_END"; //assumes no change to max_opcode_len of 9
+const uint32_t BHT_SIZE = 16;
+const uint32_t BHT_SIZE_LOG2 = 4;
+const uint32_t BTB_SIZE = 4;
+const uint32_t BTB_SIZE_LOG2 = 2;
+
+uint32_t get_bht_tag(uint32_t addr);
+uint32_t get_btb_tag(uint32_t addr);
 
 enum Register { {% for r in registers %}
     {{r}} = {{loop.index0}},{% endfor %}

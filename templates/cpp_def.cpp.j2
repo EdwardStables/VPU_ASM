@@ -6,6 +6,18 @@
 namespace {{namespace}} {
 {% endif %} 
 
+uint32_t get_bht_tag(uint32_t addr) {
+    uint32_t tag = (vpu::defs::BHT_SIZE-1) & (addr >> 2);
+    assert(tag < vpu::defs::BHT_SIZE);
+    return tag;
+}
+
+uint32_t get_btb_tag(uint32_t addr) {
+    uint32_t tag = (vpu::defs::BTB_SIZE-1) & (addr >> 2);
+    assert(tag < vpu::defs::BTB_SIZE);
+    return tag;
+}
+
 Opcode get_opcode(uint32_t instr) {
     return (Opcode)(instr >> 24);
 }
