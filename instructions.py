@@ -47,15 +47,73 @@ class InstructionDefinition:
     def __eq__(self, other: InstructionDefinition):
         return self.name == other.name and self.ops == other.ops
 
+class InstructionArray:
+    def __init__(self, data: list, initial_encoding: int):
+        self.data = data 
+        self.instructions: list[InstructionDefinition] = []
+        self.next_encoding = initial_encoding
+        self.valid_keys = ["name", "ops", "flags", "desc"]
+
+    def validate(self):
+        for i, instr in enumerate(self.data):
+            if not isinstance(instr, dict):
+                return (False, f"Instruction list entry {i}. Expected type of entry to be a dict, found {type(instr)}")
+            for k, v in instr.items():
+                if k not in self.valid_keys:
+                    return (False, f"Instruction list entry {i}. Found invalid key '{k}'")
+            if "name" not in instr:
+                return (False, f"Instruction list entry {i}. Missing required key 'name'")
+            if "desc" not in instr:
+                return (False, f"Instruction list entry {i}. Missing required key 'desc'")
+            if "ops" in instr:
+                if not isinstance(instr["ops"], list):
+                    return (False, f"Instruction list entry {i}. Value of ops must be a list")
+                for op_ind, op in enumerate(instr["ops"]):
+                    if op not in OPTYPES:
+                        return (False, f"Instruction list entry {i}, op entry {op_ind}. {op} is not a valid operand type")
+        
+        return True, ""
+    
+    def parse(self, flag_defs):
+        for i, instr in enumerate(self.data):
+            name = instr["name"]
+            ops = []
+            for op in instr.get("ops", []):
+                if op == "REG": ops.append(OperandType.REG)
+                elif op == "LAB": ops.append(OperandType.LAB)
+                elif op == "IMM": 
+                    return (False, f"Instruction list entry i specifies an IMM operand which is not legal.")
+                elif op == "IMM16": ops.append(OperandType.IMM16)
+                elif op == "IMM24": ops.append(OperandType.IMM24)
+
+            flags = instr.get("flags", [])
+            for f in flags:
+                if f not in flag_defs:
+                    return (False, f"Instruction list entry {i} uses unknown flag {f}.")
+
+            desc = instr["desc"]
+            new_instr = InstructionDefinition(name, ops, flags, desc, self.next_encoding)
+            if new_instr in self.instructions:
+                return (False, f"Instruction list entry {i} is a duplicated definition.")
+            self.instructions.append(new_instr)
+            self.next_encoding += 1
+        return True, ""
+
+    def instr_gen(self):
+        for i in self.instructions:
+            yield i
+
+
+
 class ISADefinition:
     def __init__(self, data: dict):
         
         self.next_encoding = 0
-        self.instructions: list[InstructionDefinition] = []
+        self.instructions: InstructionArray = None
         self.flags: list[str] = []
         self.registers: list[str] = []
-        self.valid_keys = ["name", "ops", "flags", "desc"]
         self.data = data
+        self.pipes = []
 
         valid, msg = self._validate_data()
         if not valid:
@@ -90,27 +148,16 @@ class ISADefinition:
                 return (False, f"Register list entry {i}. Expected type of entry to be a str, found {type(reg)}")
         for i, flag in enumerate(self.data["flags"]):
             if not isinstance(flag, dict):
-                return (False, f"Flag list entry {i}. Expected type of entry to be a dict, found {type(instr)}")
+                return (False, f"Flag list entry {i}. Expected type of entry to be a dict, found {type(flag)}")
             if "flag" not in flag:
                 return (False, f"Flag list entry {i}. Missing required key 'flag'")
             if "name" not in flag:
                 return (False, f"Flag list entry {i}. Missing required key 'name'")
-        for i, instr in enumerate(self.data["instructions"]):
-            if not isinstance(instr, dict):
-                return (False, f"Instruction list entry {i}. Expected type of entry to be a dict, found {type(instr)}")
-            for k, v in instr.items():
-                if k not in self.valid_keys:
-                    return (False, f"Instruction list entry {i}. Found invalid key '{k}'")
-            if "name" not in instr:
-                return (False, f"Instruction list entry {i}. Missing required key 'name'")
-            if "desc" not in instr:
-                return (False, f"Instruction list entry {i}. Missing required key 'desc'")
-            if "ops" in instr:
-                if not isinstance(instr["ops"], list):
-                    return (False, f"Instruction list entry {i}. Value of ops must be a list")
-                for op_ind, op in enumerate(instr["ops"]):
-                    if op not in OPTYPES:
-                        return (False, f"Instruction list entry {i}, op entry {op_ind}. {op} is not a valid operand type")
+
+        self.instructions = InstructionArray(self.data["instructions"], 0)
+        valid, err = self.instructions.validate()
+        if not valid:
+            return False, err
 
         return (True,"")
 
@@ -124,34 +171,16 @@ class ISADefinition:
             if flag in self.flags:
                 return (False, f"Flag list entry {i} is duplicated.")
             self.flags.append(flag)
-        for i, instr in enumerate(self.data["instructions"]):
-            name = instr["name"]
-            ops = []
-            for op in instr.get("ops", []):
-                if op == "REG": ops.append(OperandType.REG)
-                elif op == "LAB": ops.append(OperandType.LAB)
-                elif op == "IMM": 
-                    return (False, f"Instruction list entry i specifies an IMM operand which is not legal.")
-                elif op == "IMM16": ops.append(OperandType.IMM16)
-                elif op == "IMM24": ops.append(OperandType.IMM24)
 
-            flags = instr.get("flags", [])
-            for f in flags:
-                if f not in self.flags:
-                    return (False, f"Instruction list entry {i} uses unknown flag {f}.")
-
-            desc = instr["desc"]
-            new_instr = InstructionDefinition(name, ops, flags, desc, self.next_encoding)
-            if new_instr in self.instructions:
-                return (False, f"Instruction list entry {i} is a duplicated definition.")
-            self.instructions.append(new_instr)
-            self.next_encoding += 1
+        valid, err = self.instructions.parse(self.flags)
+        if not valid:
+            return False, err
 
         return True, ""
 
     def match(self, opcode_str: str, *ops) -> tuple[bool,tuple[int,str]|InstructionDefinition]:
         trial: list[InstructionDefinition] = []
-        for i in self.instructions:
+        for i in self.instructions.instr_gen():
             if i.name == opcode_str:
                 trial.append(i)
         
@@ -224,8 +253,8 @@ class Formatter:
         header_data = header_template.render({
             "warning": warning,
             "namespace": namespace,
-            "instructions": self.instructions.instructions,
-            "max_opcode_len": max([len(i.internal_name) for i in self.instructions.instructions]),
+            "instructions": self.instructions.instructions.instructions,
+            "max_opcode_len": max([len(i.internal_name) for i in self.instructions.instructions.instructions]),
             "registers": self.instructions.registers,
             "flags": self.instructions.flags,
         })
@@ -235,7 +264,7 @@ class Formatter:
             "warning": warning,
             "namespace": namespace,
             "header": Path(output_file).stem,
-            "instructions": self.instructions.instructions,
+            "instructions": self.instructions.instructions.instructions,
             "registers": self.instructions.registers,
             "flags": self.instructions.flags,
         })
@@ -294,7 +323,8 @@ def main():
     
     try:
         instructions = ISADefinition(instruction_dict)
-    except Exception:
+    except Exception as e:
+        print(f"Hit unexpected exception:\n{e}")
         exit(1)
 
 
