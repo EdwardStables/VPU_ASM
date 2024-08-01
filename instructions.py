@@ -40,9 +40,10 @@ class InstructionDefinition:
         self.flags = flags
         self.desc = desc
         self.encoding = encoding           
-        self.internal_name = self.name
+        self.internal_name: str = self.name
         if self.ops: 
             self.internal_name += "_" + "_".join([OPTYPES[o][0]+OPTYPES[o][3:5] for o in self.ops])
+        self.internal_name = self.internal_name.replace(".","_")
 
     def __eq__(self, other: InstructionDefinition):
         return self.name == other.name and self.ops == other.ops
