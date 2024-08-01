@@ -53,6 +53,12 @@ class InstructionArray:
         self.instructions: list[InstructionDefinition] = []
         self.next_encoding = initial_encoding
         self.valid_keys = ["name", "ops", "flags", "desc"]
+        self.prefix = []
+
+    def set_prefix(self, prefix: str|list[str]):
+        if isinstance(prefix, str):
+            prefix = [prefix]
+        self.prefix = prefix
 
     def validate(self):
         for i, instr in enumerate(self.data):
@@ -75,8 +81,13 @@ class InstructionArray:
         return True, ""
     
     def parse(self, flag_defs):
+        if self.prefix:
+            prefix = ".".join(self.prefix) + "."
+        else:
+            prefix = ""
+
         for i, instr in enumerate(self.data):
-            name = instr["name"]
+            name = prefix + instr["name"]
             ops = []
             for op in instr.get("ops", []):
                 if op == "REG": ops.append(OperandType.REG)
@@ -103,6 +114,41 @@ class InstructionArray:
         for i in self.instructions:
             yield i
 
+class Pipe:
+    def __init__(self, data: dict, initial_encoding: int):
+        self.data: dict = data
+        self.name: str = None 
+        self.prefix: str = None
+        self.instructions: InstructionArray = None
+        assert initial_encoding >= 128, "Expected pipeline instr to have MSB set"
+        self.next_encoding = initial_encoding
+
+    def validate(self):
+        if "name" not in self.data.keys():
+            return (False, f"Could not find top level pipe key 'name'")
+        if "prefix" not in self.data.keys():
+            return (False, f"Could not find top level pipe key 'prefix'")
+        if "instructions" not in self.data.keys():
+            return (False, f"Could not find top level pipe key 'instructions'")
+
+        self.instructions = InstructionArray(self.data["instructions"], self.next_encoding)
+        valid, err = self.instructions.validate()
+        if not valid:
+            return False, err
+
+        return (True,"")
+
+    def parse(self, isa: ISADefinition):
+        self.name = self.data["name"]
+        self.prefix = self.data["prefix"]
+
+        self.instructions.set_prefix(["P", self.prefix])
+        valid, err = self.instructions.parse(isa.flags)
+        if not valid:
+            return False, err
+
+        self.next_encoding = self.instructions.next_encoding
+        return True, ""
 
 
 class ISADefinition:
@@ -113,7 +159,7 @@ class ISADefinition:
         self.flags: list[str] = []
         self.registers: list[str] = []
         self.data = data
-        self.pipes = []
+        self.pipes: list[Pipe] = []
 
         valid, msg = self._validate_data()
         if not valid:
@@ -159,6 +205,18 @@ class ISADefinition:
         if not valid:
             return False, err
 
+        next_pipe_encoding = 128
+        if "pipes" in self.data.keys():
+            if not isinstance(self.data["pipes"], list):
+                return (False, f"Expected value of 'pipes' to be a list, found {type(self.data['pipes'])}")
+            for i, pipe in enumerate(self.data["pipes"]):
+                new_pipe = Pipe(pipe, next_pipe_encoding)
+                valid, err = new_pipe.validate()
+                if not valid:
+                    return False, err
+                next_pipe_encoding = new_pipe.next_encoding
+                self.pipes.append(new_pipe) 
+
         return (True,"")
 
     def _parse(self):
@@ -175,6 +233,11 @@ class ISADefinition:
         valid, err = self.instructions.parse(self.flags)
         if not valid:
             return False, err
+
+        for i,  pipe in enumerate(self.pipes):
+            valid, err = pipe.parse(self)
+            if not valid:
+                return False, err
 
         return True, ""
 
@@ -235,11 +298,22 @@ class ISADefinition:
         except ValueError:
             print(f"Internal error, tried to look up encoding of unknown register {reg}. This should not happen.")
             exit(1)
+
+    def all_instructions(self):
+        print(1)
+        for i in self.instructions.instr_gen():
+            yield i
+        print(2)
+        for p in self.pipes:
+            for i in p.instructions.instr_gen():
+                yield i            
+        print(3)
+
         
 from jinja2 import Environment, FileSystemLoader
 class Formatter:
-    def __init__(self, instructions: ISADefinition, template_path: Path):
-        self.instructions = instructions
+    def __init__(self, isa: ISADefinition, template_path: Path):
+        self.isa = isa
         self.template_path = template_path
     
     def render_cpp(self, output_file, namespace):
@@ -253,10 +327,10 @@ class Formatter:
         header_data = header_template.render({
             "warning": warning,
             "namespace": namespace,
-            "instructions": self.instructions.instructions.instructions,
-            "max_opcode_len": max([len(i.internal_name) for i in self.instructions.instructions.instructions]),
-            "registers": self.instructions.registers,
-            "flags": self.instructions.flags,
+            "instructions": [i for i in self.isa.all_instructions()],
+            "max_opcode_len": max([len(i.internal_name) for i in self.isa.all_instructions()]),
+            "registers": self.isa.registers,
+            "flags": self.isa.flags,
         })
 
         imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")
@@ -264,9 +338,9 @@ class Formatter:
             "warning": warning,
             "namespace": namespace,
             "header": Path(output_file).stem,
-            "instructions": self.instructions.instructions.instructions,
-            "registers": self.instructions.registers,
-            "flags": self.instructions.flags,
+            "instructions": [i for i in self.isa.all_instructions()],
+            "registers": self.isa.registers,
+            "flags": self.isa.flags,
         })
 
         with open(output_file+".h", "w") as f:
@@ -281,7 +355,7 @@ class Formatter:
         max_widths = [len(h) for h in headers]
 
         disp_instrs = []
-        for i in self.instructions.instructions:
+        for i in self.isa.all_instructions():
             line = [i.name, ','.join([OPTYPES[o] for o in i.ops]), ",".join(i.flags), hex(i.encoding), i.desc]
             line = [" "+c+" " for c in line]
             disp_instrs.append(line) 

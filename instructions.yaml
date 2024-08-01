@@ -130,3 +130,17 @@ instructions:
     ops:
       - REG
     desc: Store value from ACC to address in REG.
+
+pipes:
+  - name: blitter
+    prefix: BLI
+    instructions:
+      - name: PIX
+        ops:
+          - REG
+          - REG
+        desc: Blit one pixel to framebuffer, regs give positions. Uses most recent colour given to blitter
+      - name: COL
+        ops:
+          - REG
+        desc: Set blitter to use colour in register. Format is RGB in lower 24 bits.
