@@ -247,7 +247,7 @@ class ISADefinition:
 
     def match(self, opcode_str: str, *ops) -> tuple[bool,tuple[int,str]|InstructionDefinition]:
         trial: list[InstructionDefinition] = []
-        for i in self.instructions.instr_gen():
+        for i in self.all_instructions():
             if i.name == opcode_str:
                 trial.append(i)
         
