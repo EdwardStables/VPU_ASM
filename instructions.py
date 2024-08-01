@@ -303,14 +303,11 @@ class ISADefinition:
             exit(1)
 
     def all_instructions(self):
-        print(1)
         for i in self.instructions.instr_gen():
             yield i
-        print(2)
         for p in self.pipes:
             for i in p.instructions.instr_gen():
                 yield i            
-        print(3)
 
         
 from jinja2 import Environment, FileSystemLoader
