@@ -169,6 +169,11 @@ class Program:
             print(msg)
             return False, None, None
 
+        def imm_to_int(imm):
+            if len(imm) >= 3 and imm[0:2] == "0x" and (i.isdigit() for i in imm[2:]):
+                return int(imm, base=16)
+            return int(imm)
+
         instr_def = result
         label_index = 0
         encoding = [(instr_def.encoding,8)] 
@@ -180,7 +185,7 @@ class Program:
                     encoding.append((ops[i+1],24)) #Labels are always 24 bits
                     label_index = i+1
                 case instructions.OperandType.IMM16:
-                    value = int(ops[i+1])
+                    value = imm_to_int(ops[i+1])
                     width = 16
                     if value >= 2**width:
                         msg = f"Literal value {value} is too big for 16-bit literal."
@@ -189,7 +194,7 @@ class Program:
                         return False, None, None
                     encoding.append((value,width))
                 case instructions.OperandType.IMM24:
-                    value = int(ops[i+1])
+                    value = imm_to_int(ops[i+1])
                     width = 24
                     if value >= 2**width:
                         msg = f"Literal value {value} is too big for 24-bit literal."

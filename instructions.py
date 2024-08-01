@@ -291,7 +291,8 @@ class ISADefinition:
             return OperandType.REG
         if operand[0].isupper() and all(i.isdigit() or i.isupper() for i in operand):
             return OperandType.LAB
-        if all(i.isdigit() for i in operand):
+        if all(i.isdigit() for i in operand) or\
+            len(operand) >= 3 and operand[0:2] == "0x" and (i.isdigit() for i in operand[2:]):
             return OperandType.IMM
         
         raise InvalidOperandException

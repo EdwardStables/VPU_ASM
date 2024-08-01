@@ -3,18 +3,18 @@
     ;
 
     ;Lower range start in R1
-    MOV 4095            ; 0xFFF in ACC
+    MOV 0xFFF           ; 0xFFF in ACC
     LSL 20              ; 0xFFF00000 in ACC
     MOV R1 ACC          ; Move to R1
     
     ;Higher range start in R2
-    MOV 4095            ; 0xFFF in ACC
+    MOV 0xFFF           ; 0xFFF in ACC
     LSL 20              ; 0xFFF00000 in ACC
-    ADD 458752          ; Offset to 0xFFF70000
+    ADD 0x70000         ; Offset to 0xFFF70000
     MOV R2 ACC          ; Move to R2
 
     ;Length in R3
-    MOV 65535           ; Length is 0x10000
+    MOV 0x10000         ; Length is 0x10000
     MOV ACC R3
     
     ;Byte value in R4
