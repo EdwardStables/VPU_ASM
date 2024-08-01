@@ -151,11 +151,11 @@ pipes:
       - name: LEN
         ops:
           - REG
-        desc: Set the DMA LENGTH reg.
+        desc: Set the DMA LENGTH reg, bytes.
       - name: SET
         ops:
           - REG
-        desc: Write the same word to every entry in the DMA range.
+        desc: Write the same byte to every entry in the DMA range. Reg truncated to LS byte
       - name: CPY
         desc: Copy LENGTH bytes from SOURCE to DEST.
   - name: blitter
