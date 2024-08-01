@@ -132,6 +132,32 @@ instructions:
     desc: Store value from ACC to address in REG.
 
 pipes:
+  - name: sync
+    prefix: SNC
+    instructions:
+      - name: FNC
+        desc: Wait for all hardware kicks to complete before continuing.
+  - name: dma
+    prefix: DMA 
+    instructions:
+      - name: DST
+        ops:
+          - REG
+        desc: Set the DMA DEST reg address.
+      - name: SRC
+        ops:
+          - REG
+        desc: Set the DMA SOURCE reg address.
+      - name: LEN
+        ops:
+          - REG
+        desc: Set the DMA LENGTH reg.
+      - name: SET
+        ops:
+          - REG
+        desc: Write the same word to every entry in the DMA range.
+      - name: CPY
+        desc: Copy LENGTH bytes from SOURCE to DEST.
   - name: blitter
     prefix: BLI
     instructions:

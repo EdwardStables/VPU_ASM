@@ -147,6 +147,7 @@ class Pipe:
         if not valid:
             return False, err
 
+        assert len(self.instructions.instructions) <= 16, "Cannot have more than 16 instructions per hardware pipe"
         self.next_encoding = self.instructions.next_encoding
         return True, ""
 
@@ -214,8 +215,10 @@ class ISADefinition:
                 valid, err = new_pipe.validate()
                 if not valid:
                     return False, err
-                next_pipe_encoding = new_pipe.next_encoding
+                assert new_pipe.next_encoding < next_pipe_encoding + 16, "Next encoding incremented more than expected"
+                next_pipe_encoding += 16
                 self.pipes.append(new_pipe) 
+
 
         return (True,"")
 
