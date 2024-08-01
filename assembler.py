@@ -236,6 +236,12 @@ def main():
     except instructions.InstructionFormatException:
         print("Badly formed ISA file, exiting.")
         exit(1)
+
+    in_file = Path(args.asm_file)
+    if not in_file.exists():
+        print("Cannot find input file", in_file)
+        exit(1)
+
     program = Program(Path(args.asm_file), isa)
     write_out(program, Path(args.output))
 
