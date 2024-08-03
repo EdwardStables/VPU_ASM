@@ -132,8 +132,8 @@ instructions:
     desc: Store value from ACC to address in REG.
 
 pipes:
-  - name: sync
-    prefix: SNC
+  - name: sched
+    prefix: SCH
     instructions:
       - name: FNC
         desc: Wait for all hardware kicks to complete before continuing.
