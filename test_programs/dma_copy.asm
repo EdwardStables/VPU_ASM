@@ -31,6 +31,6 @@
     P.DMA.LEN R3
     P.DMA.CPY
 
-    P.SNC.FNC
+    P.SCH.FNC
     HLT
     

@@ -11,3 +11,6 @@
     
     MOV 0xFF            ; Set all bytes to 0xFF
     P.DMA.SET ACC       
+    
+    P.SCH.FNC
+    HLT
