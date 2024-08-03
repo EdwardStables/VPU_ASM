@@ -9,7 +9,7 @@ namespace {{namespace}} {
 {% endif %}
 
 //Dirty global state
-static uint32_t _global_cycle = 0;
+inline uint32_t _global_cycle = 0;
 void increment_global_cycle();
 uint32_t get_global_cycle();
 uint32_t get_next_global_cycle();
