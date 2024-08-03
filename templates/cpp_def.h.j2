@@ -21,6 +21,7 @@ const uint32_t FLAG_COUNT = {{flags|length}};
 const uint32_t SEGMENT_END = 0xFFFFFFFF;
 const uint32_t MAX_OPCODE_LEN = {{max_opcode_len}};
 const std::string SEGMENT_END_WIDTH_STRING = "{{ 'SEG_END'.rjust(max_opcode_len) }}";
+const uint32_t MEM_ACCESS_WIDTH = 64; //Used by DMA and mem heirarchy
 
 //Branch Prediction
 const uint32_t BHT_SIZE = 16;
