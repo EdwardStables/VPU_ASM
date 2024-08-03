@@ -123,6 +123,7 @@ class Pipe:
         self.instructions: InstructionArray = None
         assert initial_encoding >= 128, "Expected pipeline instr to have MSB set"
         self.next_encoding = initial_encoding
+        self.encoding_prefix = initial_encoding >> 4
 
     def validate(self):
         if "name" not in self.data.keys():
@@ -333,6 +334,7 @@ class Formatter:
             "max_opcode_len": max([len(i.internal_name) for i in self.isa.all_instructions()]),
             "registers": self.isa.registers,
             "flags": self.isa.flags,
+            "pipes": self.isa.pipes,
         })
 
         imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")

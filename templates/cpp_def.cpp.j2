@@ -6,6 +6,19 @@
 namespace {{namespace}} {
 {% endif %} 
 
+void increment_global_cycle() {
+    assert(_global_cycle < 0xFFFFFFFF);
+    _global_cycle++;
+}
+
+uint32_t get_global_cycle() {
+    return _global_cycle;
+}
+
+uint32_t get_next_global_cycle() {
+    return _global_cycle + 1;
+}
+
 uint32_t get_bht_tag(uint32_t addr) {
     uint32_t tag = (vpu::defs::BHT_SIZE-1) & (addr >> 2);
     assert(tag < vpu::defs::BHT_SIZE);
@@ -66,6 +79,10 @@ uint16_t get_u16(uint32_t instr) {
 Register get_register(uint32_t instr, uint8_t index) {
     assert((0 <= index) && (index < 3));
     return (Register)(0xFF & (instr >> 8*(2-index)));
+}
+
+Pipe opcode_to_pipe(Opcode opcode) {
+    return (Pipe)((uint32_t)opcode >> 4);
 }
 
 {% if namespace != "" %}

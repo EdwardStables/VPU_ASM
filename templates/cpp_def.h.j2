@@ -8,11 +8,21 @@
 namespace {{namespace}} {
 {% endif %}
 
+//Dirty global state
+static uint32_t _global_cycle = 0;
+void increment_global_cycle();
+uint32_t get_global_cycle();
+uint32_t get_next_global_cycle();
+
+
+//Configuration
 const uint32_t REGISTER_COUNT = {{registers|length}};
 const uint32_t FLAG_COUNT = {{flags|length}};
 const uint32_t SEGMENT_END = 0xFFFFFFFF;
 const uint32_t MAX_OPCODE_LEN = {{max_opcode_len}};
-const std::string SEGMENT_END_WIDTH_STRING = "  SEG_END"; //assumes no change to max_opcode_len of 9
+const std::string SEGMENT_END_WIDTH_STRING = "{{ 'SEG_END'.rjust(max_opcode_len) }}";
+
+//Branch Prediction
 const uint32_t BHT_SIZE = 16;
 const uint32_t BHT_SIZE_LOG2 = 4;
 const uint32_t BTB_SIZE = 4;
@@ -21,6 +31,8 @@ const uint32_t BTB_SIZE_LOG2 = 2;
 uint32_t get_bht_tag(uint32_t addr);
 uint32_t get_btb_tag(uint32_t addr);
 
+
+//Enum definitions
 enum Register { {% for r in registers %}
     {{r}} = {{loop.index0}},{% endfor %}
 };
@@ -28,7 +40,6 @@ enum Register { {% for r in registers %}
 enum Flag { {% for f in flags %}
     {{f}} = {{loop.index0}},{% endfor %}
 };
-
 
 enum Opcode { {% for i in instructions %}
     {{i.internal_name}} = {{i.encoding}},{% endfor %}
@@ -43,6 +54,13 @@ uint32_t get_label(uint32_t instr);
 uint32_t get_u24(uint32_t instr);
 uint16_t get_u16(uint32_t instr);
 Register get_register(uint32_t instr, uint8_t index);
+
+//Pipelines
+const uint32_t SCHEDULER_FRONTEND_QUEUE_SIZE = 4;
+enum Pipe { {% for p in pipes %}
+    {{p.name|upper}} = {{p.encoding_prefix}},{% endfor %}
+};
+Pipe opcode_to_pipe(Opcode opcode);
 
 {% if namespace != "" %}
 }
