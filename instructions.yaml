@@ -136,7 +136,7 @@ pipes:
     prefix: SCH
     instructions:
       - name: FNC
-        desc: Wait for all hardware kicks to complete before continuing.
+        desc: Wait for the scheduler to report all hardware kicks have completed.
   - name: dma
     prefix: DMA 
     instructions:
