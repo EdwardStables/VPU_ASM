@@ -1,9 +1,13 @@
+memory:
+  size: 512 #MB
+  width: 64 #bytes
+
 registers:
   - PC
   - ACC
   - R1
   - R2
-  - R3
+  - R3u
   - R4
   - R5
   - R6

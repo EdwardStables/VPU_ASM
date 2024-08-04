@@ -163,6 +163,8 @@ class ISADefinition:
         self.registers: list[str] = []
         self.data = data
         self.pipes: list[Pipe] = []
+        self.memory_size = None
+        self.memory_width = None
 
         valid, msg = self._validate_data()
         if not valid:
@@ -184,6 +186,8 @@ class ISADefinition:
             return (False, f"Could not find top level key 'registers'")
         if "flags" not in self.data.keys():
             return (False, f"Could not find top level key 'flags'")
+        if "memory" not in self.data.keys():
+            return (False, f"Could not find top level key 'memory'")
 
         if not isinstance(self.data["registers"], list):
             return (False, f"Expected value of 'registers' to be a list, found {type(self.data['registers'])}")
@@ -191,6 +195,8 @@ class ISADefinition:
             return (False, f"Expected value of 'flags' to be a list, found {type(self.data['flags'])}")
         if not isinstance(self.data["instructions"], list):
             return (False, f"Expected value of 'instructions' to be a list, found {type(self.data['instructions'])}")
+        if not isinstance(self.data["memory"], dict):
+            return (False, f"Expected value of 'memory' to be a dict, found {type(self.data['memory'])}")
 
         for i, reg in enumerate(self.data["registers"]):
             if not isinstance(reg, str):
@@ -202,6 +208,14 @@ class ISADefinition:
                 return (False, f"Flag list entry {i}. Missing required key 'flag'")
             if "name" not in flag:
                 return (False, f"Flag list entry {i}. Missing required key 'name'")
+        for k, v in self.data["memory"].items():
+            if not isinstance(k, str):
+                return (False, f"Memory entry {k}. Expected type of key to be a str, found {type(k)}")
+            if not isinstance(v, int):
+                return (False, f"Memory entry {k}. Expected type of value to be an int, found {type(v)}")
+        if set(self.data["memory"].keys()) != set(["size", "width"]):
+            return (False, f"Error in memory specification, expected only keys 'size' and 'width'.")
+
 
         self.instructions = InstructionArray(self.data["instructions"], 0)
         valid, err = self.instructions.validate()
@@ -234,6 +248,8 @@ class ISADefinition:
             if flag in self.flags:
                 return (False, f"Flag list entry {i} is duplicated.")
             self.flags.append(flag)
+        self.memory_size = self.data["memory"]["size"]
+        self.memory_width = self.data["memory"]["width"]
 
         valid, err = self.instructions.parse(self.flags)
         if not valid:
@@ -335,6 +351,8 @@ class Formatter:
             "registers": self.isa.registers,
             "flags": self.isa.flags,
             "pipes": self.isa.pipes,
+            "mem_size_mb": self.isa.memory_size,
+            "mem_access_width_bytes": self.isa.memory_width,
         })
 
         imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")
