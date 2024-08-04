@@ -3,13 +3,13 @@
     ;
 
     ;Lower range start in R1
-    MOV 0xFFF           ; 0xFFF in ACC
-    LSL 20              ; 0xFFF00000 in ACC
+    MOV 0xF             ; 0xF in ACC
+    LSL 20              ; 0x00F00000 in ACC
     MOV R1 ACC          ; Move to R1
     
     ;Higher range start in R2
-    MOV 0xFFF           ; 0xFFF in ACC
-    LSL 20              ; 0xFFF00000 in ACC
+    MOV 0xF             ; 0xF in ACC
+    LSL 20              ; 0x00F00000 in ACC
     ADD 0x70000         ; Offset to 0xFFF70000
     MOV R2 ACC          ; Move to R2
 

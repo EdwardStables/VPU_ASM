@@ -2,8 +2,8 @@
     ; Set address 0xFFF00000 to 0xFFF10000 to 0xFF
     ;
 
-    MOV 0xFFF           ; 0xFFF in ACC
-    LSL 20              ; 0xFFF00000 in ACC
+    MOV 0xF             ; 0xF in ACC
+    LSL 20              ; 0x00F00000 in ACC
     P.DMA.DST ACC
     
     MOV 0x10000         ; Length is 0x10000
