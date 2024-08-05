@@ -10,12 +10,12 @@
     ;Higher range start in R2
     MOV 0xF             ; 0xF in ACC
     LSL 20              ; 0x00F00000 in ACC
-    ADD 0x70000         ; Offset to 0xFFF70000
+    ADD 0x70000         ; Offset to 0x00F70000
     MOV R2 ACC          ; Move to R2
 
     ;Length in R3
     MOV 0x10000         ; Length is 0x10000
-    MOV ACC R3
+    MOV R3 ACC
     
     ;Byte value in R4
     MOV R4 15
