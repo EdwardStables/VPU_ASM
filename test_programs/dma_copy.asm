@@ -18,7 +18,7 @@
     MOV R3 ACC
     
     ;Byte value in R4
-    MOV R4 15
+    MOV R4 FF
     
     ;Set first range to byte value
     P.DMA.DST R1
