@@ -1,6 +1,6 @@
 # VPU ASM
 
-Repo contains documentation and assembler for VPU assembly, as well as test programs.
+Repo contains documentation and assembler for VPU assembly, as well as test programs. THe scripts here are messy and works in progress, at some point they will get a rewrite with a better design (and probably not in python).
 
 Language is designed to benefit the hardware as much as possible, therefore making it a pretty bad and inexpressive ASM dialect. Assembler is python for ease of development and not really needing performance currently due to the size of test programs.
 
