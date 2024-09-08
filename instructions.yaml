@@ -165,6 +165,8 @@ pipes:
   - name: blitter
     prefix: BLI
     instructions:
+      - name : CLR
+        desc: Clear the framebuffer to most recent colour given to blitter
       - name: PIX
         ops:
           - REG

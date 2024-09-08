@@ -24,6 +24,17 @@ const std::string SEGMENT_END_WIDTH_STRING = "{{ 'SEG_END'.rjust(max_opcode_len)
 constexpr uint32_t MEM_SIZE = {{mem_size_mb}} * 1024 * 1024;
 const uint32_t MEM_ACCESS_WIDTH = {{mem_access_width_bytes}}; //Used by DMA and mem heirarchy
 
+//Framebuffer
+constexpr uint32_t FRAMEBUFFER_WIDTH = 300;
+constexpr uint32_t FRAMEBUFFER_HEIGHT = 200;
+constexpr uint8_t FRAMEBUFFER_PIXEL_BYTES = 4; //RGBA
+constexpr uint32_t FRAMEBUFFER_PIXEL_BITS = 8 * FRAMEBUFFER_PIXEL_BYTES; //RGBA 8bit
+constexpr uint32_t BLITTER_MAX_PIXELS = (MEM_ACCESS_WIDTH*8)/FRAMEBUFFER_PIXEL_BITS; //How many pixels blitter can set per cycle
+constexpr bool DOUBLEBUFFERED = false;
+constexpr uint32_t FRAMEBUFFER_BYTES = (DOUBLEBUFFERED ? 2 : 1) * FRAMEBUFFER_PIXEL_BYTES * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH;
+constexpr uint32_t FRAMEBUFFER_ADDR = (MEM_SIZE - FRAMEBUFFER_BYTES) & 0xFFFF0000;
+static_assert(FRAMEBUFFER_BYTES < MEM_SIZE / 4, "Framebuffer size would take up more than 1/4 of available memory");
+
 //Branch Prediction
 const uint32_t BHT_SIZE = 16;
 const uint32_t BHT_SIZE_LOG2 = 4;
