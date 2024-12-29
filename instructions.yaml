@@ -176,3 +176,20 @@ pipes:
         ops:
           - REG
         desc: Set blitter to use colour in register. Format is RGB in lower 24 bits.
+      - name: COL
+        ops:
+          - IMM24
+        desc: Set blitter to use colour in IMM. Format is RGB in lower 24 bits.
+      - name: SPS
+        ops:
+          - REG
+          - REG
+        desc: Commence string writing at position given by regs.
+      - name: SPC
+        ops:
+          - REG
+        desc: Write ASCII character code stored in REG. Only correctly renders values 32-126 inclusive. Increments position by character width.
+      - name: SPC
+        ops:
+          - IMM24
+        desc: Write ASCII character code given by IMM. Only correctly renders values 32-126 inclusive. Increments position by character width.
