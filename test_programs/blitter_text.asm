@@ -5,8 +5,8 @@
     P.BLI.SPS R1 R2     ; Start writing text at 8,8
 
 
-    MOV 1               ; Write out 1-4 separated by spaces
-    MOV R1 5
+    MOV 49              ; Write out 1-4 separated by spaces
+    MOV R1 53 
 LOOP:
     P.BLI.SPC ACC
     P.BLI.SPC 0x20
