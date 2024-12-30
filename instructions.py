@@ -8,8 +8,52 @@ from dataclasses import dataclass
 from yaml import safe_load
 from pathlib import Path
 from enum import IntEnum
+from PIL import Image
 
 OPTYPES = ["REG","LAB","IMM","IMM16","IMM24"]
+
+class FontGenerator:
+    def __init__(self, path: Path):
+        self.path = path 
+        self.glyph_size = 8 #8x8 pixels
+        self.glyph_count = 96 #number of symbols. Base ascii from 32-127 inclusive
+        self.table = []
+
+    def load(self):
+        image = Image.open(self.path)
+        pixels = image.load()
+
+        if image.size[0] % self.glyph_size != 0:
+            raise Exception(f"Font image width not a multiple of {self.glyph_size}")
+        if image.size[1] % self.glyph_size != 0:
+            raise Exception(f"Font image height not a multiple of {self.glyph_size}")
+
+        x_count = int(image.size[0]/self.glyph_size)
+        y_count = int(image.size[1]/self.glyph_size)
+        total_count = x_count * y_count
+
+        if total_count != self.glyph_count:
+            raise Exception(f"Found a total of {total_count} glyphs, but expected {self.glyph_count}")
+
+        for y in range(y_count):
+            ypos = y*self.glyph_size
+            for x in range(x_count):
+                xpos = x*self.glyph_size
+
+                glyph_val = 0
+                line_val = 0
+                for line in range(self.glyph_size):
+                    for col in range(self.glyph_size):
+                        pixel = pixels[xpos + col, ypos + line]
+                        if pixel[3] != 0: #if not blank
+                            line_val |= (1<<((self.glyph_size-1)-col))
+                    glyph_val |= (line_val<<(self.glyph_size*((self.glyph_size-1)-line)))
+                    line_val = 0
+                self.table.append(glyph_val)
+
+    def get_values(self):
+        return [hex(v) for v in self.table]
+
 class OperandType(IntEnum):
     REG=0
     LAB=1
@@ -153,6 +197,11 @@ class Pipe:
         self.next_encoding = self.instructions.next_encoding
         return True, ""
 
+#Read-only data included inside the build
+class Data:
+    def __init__(self, asm_root: Path):
+        self.font = FontGenerator(asm_root/"ascii_sheet.png")
+        self.font.load()
 
 class ISADefinition:
     def __init__(self, data: dict):
@@ -331,8 +380,9 @@ class ISADefinition:
         
 from jinja2 import Environment, FileSystemLoader
 class Formatter:
-    def __init__(self, isa: ISADefinition, template_path: Path):
+    def __init__(self, isa: ISADefinition, data: Data, template_path: Path):
         self.isa = isa
+        self.data = data
         self.template_path = template_path
     
     def render_cpp(self, output_file, namespace):
@@ -353,6 +403,7 @@ class Formatter:
             "pipes": self.isa.pipes,
             "mem_size_mb": self.isa.memory_size,
             "mem_access_width_bytes": self.isa.memory_width,
+            "ascii_glyphs": self.data.font.get_values(),
         })
 
         imp_template = Environment(loader=FileSystemLoader(self.template_path)).get_template("cpp_def.cpp.j2")
@@ -420,8 +471,14 @@ def main():
     try:
         instructions = ISADefinition(instruction_dict)
     except Exception as e:
-        print(f"Hit unexpected exception:\n{e}")
-        exit(1)
+        print(f"Hit unexpected exception when reading instruction yaml:\n{e}")
+        raise
+
+    try:
+        data = Data(Path(args.definitions).parent)
+    except Exception as e:
+        print(f"Hit unexpected exception when generating build-time data:\n{e}")
+        raise
 
 
     if not args.templates:
@@ -436,7 +493,7 @@ def main():
         print(f"Templates path {templates} exists but is not directory ")
         exit(1)
 
-    formatter = Formatter(instructions, templates)
+    formatter = Formatter(instructions, data, templates)
     #if args.sv:
     #    formatter.render_sv("defs_pkg.sv")
 
