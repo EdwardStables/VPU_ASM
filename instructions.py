@@ -355,11 +355,14 @@ class ISADefinition:
     def get_operand_type(self, operand: str) -> OperandType:
         if operand in self.registers:
             return OperandType.REG
-        if operand[0].isupper() and all(i.isdigit() or i.isupper() for i in operand):
+        if operand[0].isupper() and all(i.isdigit() or i.isupper() or i == "_" for i in operand):
             return OperandType.LAB
-        if all(i.isdigit() for i in operand) or\
-            len(operand) >= 3 and operand[0:2] == "0x" and (i.isdigit() for i in operand[2:]):
-            return OperandType.IMM
+        if operand[0].isdigit() or (len(operand) > 1 and operand[0] == "-"):
+            negative = operand[0] == "-"
+            val = operand if not negative else operand[1:]
+            if all(i.isdigit() for i in val) or\
+                len(val) >= 3 and val[0:2] == "0x" and (i.isdigit() for i in val[2:]):
+                return OperandType.IMM
         
         raise InvalidOperandException
 

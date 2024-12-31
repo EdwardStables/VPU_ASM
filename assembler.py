@@ -43,8 +43,8 @@ class SourceLine:
                 return 0, "First digit of label cannot be an integer"
             if i == len(self.source)-1 and c != ":":
                 return i, "Labels must end with a colon"
-            if i < len(self.source)-1 and not c.isupper() and not c.isdigit():
-                return i, "Labels can only contain integers and uppercase letters"
+            if i < len(self.source)-1 and not c.isupper() and not c.isdigit() and not c == "_":
+                return i, "Labels can only contain integers, underscores, and uppercase letters"
 
         return None, None 
     
@@ -151,7 +151,10 @@ class Program:
             val = 0
             total_width = 0
             for (value, width) in encoding[::-1]:
-                val |= value << total_width
+                mask = 0
+                for i in range(width):
+                    mask |= 1 << i
+                val |= (value & mask) << total_width
                 total_width += width
             assert total_width == 32, f"{sl.file}:{sl.linenumber+1} Got total width of {total_width}"
             self.output.append(val)
