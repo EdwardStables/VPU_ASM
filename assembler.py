@@ -157,10 +157,10 @@ class Program:
                 val |= (value & mask) << total_width
                 total_width += width
             assert total_width == 32, f"{sl.file}:{sl.linenumber+1} Got total width of {total_width}"
-            self.output.append(val)
+            self.output.append((val,sl.linenumber))
 
         #Program region marker
-        self.output.append(0xFFFFFFFF)
+        self.output.append((0xFFFFFFFF,-1))
         
     def get_encoding(self, sourceline):
         #assume all inputs are well-formed instructions, not empty or labels
@@ -218,6 +218,48 @@ class Program:
 
         return True, encoding, label_index
 
+    def write_out(self, path: Path, write_debug: bool):
+        with path.open("wb") as f:
+            for instr, line in self.output:
+                f.write(instr.to_bytes(4,'little'))
+
+        if write_debug:
+            self.write_out_debug(path)
+
+    def write_out_debug(self, path: Path):
+        """
+        Debug file:
+            Fields are a 4 byte length value followed by content
+            Fields are currently:
+            - object file hash
+            - absolute path to input file
+            - line numbers corresponding to their PC offset
+
+        This has had zero thought at space optimisation, currently not necessary
+        """
+
+        debug_path = path.parent / (path.name + ".dbg")
+        with debug_path.open("wb") as f:
+            # File hash
+            from hashlib import md5
+            with path.open('rb') as bf:
+                hash = md5(bf.read())
+            f.write((hash.digest_size).to_bytes(4,'little'))
+            f.write(hash.digest())
+
+            # Input file path
+            encoded_path = str(self.file.absolute()).encode() 
+            f.write(len(encoded_path).to_bytes(4,'little'))
+            f.write(encoded_path)
+            
+            # Source code mapping
+            f.write((len(self.output)*4).to_bytes(4,'little'))
+            for instr, line in self.output:
+                val = line if line != -1 else 0xFFFFFFFF
+                f.write(val.to_bytes(4,'little'))
+
+
+
 def get_args():
     parser = ArgumentParser()
     isa_file = "instructions.yaml"
@@ -225,12 +267,9 @@ def get_args():
     parser.add_argument("--isa", type=str, default=isa_file, help=f"Path to ISA file. Defaults to {isa_file}")
     parser.add_argument("--data", type=str, nargs="+", help="Input data file(s)")
     parser.add_argument("--output", "-o", type=str, help="Output file name", default="vpu.out")
+    parser.add_argument("--debug", "-d", action="store_true", help="Generate debug file alongside output object")
     return parser.parse_args()
 
-def write_out(program: Program, path: Path):
-    with path.open("wb") as f:
-        for instr in program.output:
-            f.write(instr.to_bytes(4,'little'))
 
 def main():
     args = get_args()
@@ -246,7 +285,7 @@ def main():
         exit(1)
 
     program = Program(Path(args.asm_file), isa)
-    write_out(program, Path(args.output))
+    program.write_out(Path(args.output), args.debug)
 
 if __name__ == "__main__":
     main()
