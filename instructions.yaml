@@ -188,8 +188,8 @@ pipes:
       - name: SPC
         ops:
           - REG
-        desc: Write ASCII character code stored in REG. Only correctly renders values 32-126 inclusive. Increments position by character width.
+        desc: Write ASCII character code stored in REG. ASCII values 32-126. Increments position by character width.
       - name: SPC
         ops:
           - IMM24
-        desc: Write ASCII character code given by IMM. Only correctly renders values 32-126 inclusive. Increments position by character width.
+        desc: Write ASCII character code given by IMM. ASCII values 32-126. Increments position by character width.
