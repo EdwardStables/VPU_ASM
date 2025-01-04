@@ -57,5 +57,6 @@ NEW_LINE:
     JMP LOOP
 
 END:
+    P.BLI.SWP
     P.SCH.FNC
     HLT
