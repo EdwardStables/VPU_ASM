@@ -104,6 +104,7 @@ class Program:
                     self.source_lines.append(sl)
         
         self.instructions = []
+        self.literal_ints = {}
         error_count = 0
         next_label_name = None
         self.label_store = {}
@@ -132,14 +133,18 @@ class Program:
                 print("Reached max error count, exiting.")
                 exit(1)
 
-
+        #4 byte reset vector
+        #4 byte region separator
+        #Followed by literal table of variable length
+        #4 byte region separator
+        program_start_address = 4 + 4 + (4*len(self.literal_ints)) + 4
         for label_name, sl, encoding, label_ref in self.instructions:
             if label_ref and encoding[label_ref][0] not in self.label_store:
                 print(sl.annotate(operand_index=label_ref, msg=f"Label {encoding[label_ref][0]} is used, but not defined anywhere in the program."))
                 error_count += 1
             elif label_ref:
                 #mult by 4 to account for alignment
-                encoding[label_ref] = (4*self.label_store[encoding[label_ref][0]],encoding[label_ref][1])
+                encoding[label_ref] = (4*self.label_store[encoding[label_ref][0]] + program_start_address,encoding[label_ref][1])
 
         if error_count:
             print("Encoding generation completed with errors, exiting.")
@@ -147,6 +152,19 @@ class Program:
 
         #At this point we have confidence all instructions are well-formed and all labels are valid
         self.output = []
+        # reset vector
+        self.output.append((program_start_address,-1)) 
+        # region separator
+        self.output.append((0xFFFFFFFF,-1))
+
+        # constant table
+        for i, (value, index) in enumerate(self.literal_ints.items()):
+            assert i == index, "Expected in-order iteration over literal dict"
+            self.output.append((value,-1))
+        # region separator
+        self.output.append((0xFFFFFFFF,-1)) 
+
+        # program
         for label_name, sl, encoding, label_ref in self.instructions:
             val = 0
             total_width = 0
@@ -187,24 +205,18 @@ class Program:
                 case instructions.OperandType.LAB:
                     encoding.append((ops[i+1],24)) #Labels are always 24 bits
                     label_index = i+1
-                case instructions.OperandType.IMM16:
+                case instructions.OperandType.IMM_INT:
                     value = imm_to_int(ops[i+1])
-                    width = 16
-                    if value >= 2**width:
-                        msg = f"Literal value {value} is too big for 16-bit literal."
+                    if value >= 2**32:
+                        msg = f"Literal value {value} is too big for 32 bit integers"
                         msg = sourceline.annotate(operand_index=operand_index, msg=msg)
                         print(msg)
                         return False, None, None
-                    encoding.append((value,width))
-                case instructions.OperandType.IMM24:
-                    value = imm_to_int(ops[i+1])
-                    width = 24
-                    if value >= 2**width:
-                        msg = f"Literal value {value} is too big for 24-bit literal."
-                        msg = sourceline.annotate(operand_index=operand_index, msg=msg)
-                        print(msg)
-                        return False, None, None
-                    encoding.append((value,width))
+                    literal_index = self.add_literal_int(value)
+
+                    #fill up remaining space
+                    width = 24 if instr_def.ops == [instructions.OperandType.IMM_INT] else 16
+                    encoding.append((literal_index,width))
                 case _:
                     assert False, "Unexpected operand value"
 
@@ -218,9 +230,16 @@ class Program:
 
         return True, encoding, label_index
 
+    def add_literal_int(self, value: int):
+        if value not in self.literal_ints:
+            self.literal_ints[value] = len(self.literal_ints)
+        return self.literal_ints[value]
+
     def write_out(self, path: Path, write_debug: bool):
         with path.open("wb") as f:
             for instr, line in self.output:
+                if instr < 0:
+                    instr += (2**32)
                 f.write(instr.to_bytes(4,'little'))
 
         if write_debug:

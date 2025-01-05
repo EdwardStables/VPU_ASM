@@ -36,21 +36,21 @@ instructions:
   - name: MOV
     ops:
       - REG
-      - IMM16
-    desc: Load 16-bit immediate into REG
+      - IMM_INT
+    desc: Load immediate into REG
 
   - name: MOV
     ops:
-      - IMM24
-    desc: Load 24-bit immediate into ACC
+      - IMM_INT
+    desc: Load immediate into ACC
 
   - name: ADD
     ops:
-      - IMM24
+      - IMM_INT
     flags:
       - O
       - C
-    desc: Add 24-bit immediate to ACC. Set O on overflow and C if result is 0.
+    desc: Add immediate to ACC. Set O on overflow and C if result is 0.
 
   - name: ADD
     ops:
@@ -62,8 +62,8 @@ instructions:
 
   - name: ASR
     ops:
-      - IMM24
-    desc: Arithmetic shift right by IMM24
+      - IMM_INT
+    desc: Arithmetic shift right by IMM_INT
 
   - name: ASR
     ops:
@@ -72,8 +72,8 @@ instructions:
 
   - name: LSR
     ops:
-      - IMM24
-    desc: Logical shift right by IMM
+      - IMM_INT
+    desc: Logical shift right by IMM_INT
 
   - name: LSR
     ops:
@@ -82,8 +82,8 @@ instructions:
 
   - name: LSL
     ops:
-      - IMM24
-    desc: Logical shift left by IMM
+      - IMM_INT
+    desc: Logical shift left by IMM_INT
 
   - name: LSL
     ops:
@@ -178,8 +178,8 @@ pipes:
         desc: Set blitter to use colour in register. Format is RGB in lower 24 bits.
       - name: COL
         ops:
-          - IMM24
-        desc: Set blitter to use colour in IMM. Format is RGB in lower 24 bits.
+          - IMM_INT
+        desc: Set blitter to use colour in IMM_INT. Format is RGB in lower 24 bits.
       - name: SPS
         ops:
           - REG
@@ -191,8 +191,8 @@ pipes:
         desc: Write ASCII character code stored in REG. ASCII values 32-126. Increments position by character width.
       - name: SPC
         ops:
-          - IMM24
-        desc: Write ASCII character code given by IMM. ASCII values 32-126. Increments position by character width.
+          - IMM_INT
+        desc: Write ASCII character code given by IMM_INT. ASCII values 32-126. Increments position by character width.
       - name: SWP
         desc: Swap the framebuffers, if configured. Triggers a dump of the framebuffer if switch enabled
 

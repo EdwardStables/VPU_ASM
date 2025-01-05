@@ -67,27 +67,6 @@ uint32_t get_label(uint32_t instr) {
     return 0xFFFFFF & instr;
 }
 
-
-/* FIXME */
-//these functions are adjusted to do MSB extension from bit 15/23 to support signed numbers
-//this is not what they are expected to do
-//once a global constant table is created they can be returned to their original definitions of just u24/u16 parsing
-
-uint32_t get_u24(uint32_t instr) {
-    uint32_t val = 0xFFFFFF & instr;
-    if (val >> 23) {
-        val |= 0xFF000000;
-    }
-    return val;
-}
-uint16_t get_u16(uint32_t instr) {
-    uint32_t val = 0xFFFF & instr;
-    if (val >> 23) {
-        val |= 0xFFFF0000;
-    }
-    return val;
-}
-
 //Index from left to right
 Register get_register(uint32_t instr, uint8_t index) {
     assert((0 <= index) && (index < 3));

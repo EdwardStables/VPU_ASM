@@ -11,7 +11,7 @@ from enum import IntEnum
 from PIL import Image
 from hashlib import md5
 
-OPTYPES = ["REG","LAB","IMM","IMM16","IMM24"]
+OPTYPES = ["REG","LAB","IMM_INT"]
 
 class FontGenerator:
     def __init__(self, path: Path):
@@ -58,9 +58,7 @@ class FontGenerator:
 class OperandType(IntEnum):
     REG=0
     LAB=1
-    IMM=2 #invalid in specification, given as general parsing type for 16/24
-    IMM16=3
-    IMM24=4
+    IMM_INT=2
 
 def load_from_yaml(path: str|Path) -> dict:
     if isinstance(path, str):
@@ -87,7 +85,7 @@ class InstructionDefinition:
         self.encoding = encoding           
         self.internal_name: str = self.name
         if self.ops: 
-            self.internal_name += "_" + "_".join([OPTYPES[o][0]+OPTYPES[o][3:5] for o in self.ops])
+            self.internal_name += "_" + "_".join([OPTYPES[o][0] for o in self.ops])
         self.internal_name = self.internal_name.replace(".","_")
 
     def __eq__(self, other: InstructionDefinition):
@@ -138,10 +136,7 @@ class InstructionArray:
             for op in instr.get("ops", []):
                 if op == "REG": ops.append(OperandType.REG)
                 elif op == "LAB": ops.append(OperandType.LAB)
-                elif op == "IMM": 
-                    return (False, f"Instruction list entry i specifies an IMM operand which is not legal.")
-                elif op == "IMM16": ops.append(OperandType.IMM16)
-                elif op == "IMM24": ops.append(OperandType.IMM24)
+                elif op == "IMM_INT": ops.append(OperandType.IMM_INT)
 
             flags = instr.get("flags", [])
             for f in flags:
@@ -335,11 +330,7 @@ class ISADefinition:
         except InvalidOperandException:
             return False, (i+1, f"Could not determine type of operand {o}")
         
-        def check_equality(ref, test):
-            _ref = [OperandType.IMM if i in (OperandType.IMM24,OperandType.IMM16) else i for i in ref]
-            return _ref == test
-
-        filtered_trial = [t for t in trial if check_equality(t.ops, optypes)]
+        filtered_trial = [t for t in trial if (t.ops == optypes)]
 
         if not filtered_trial:
             found = [OPTYPES[ot] for ot in optypes]
@@ -363,7 +354,7 @@ class ISADefinition:
             val = operand if not negative else operand[1:]
             if all(i.isdigit() for i in val) or\
                 len(val) >= 3 and val[0:2] == "0x" and (i.isdigit() for i in val[2:]):
-                return OperandType.IMM
+                return OperandType.IMM_INT
         
         raise InvalidOperandException
 
