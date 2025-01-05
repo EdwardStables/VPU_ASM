@@ -1,3 +1,6 @@
+    P.BLI.COL 0x000000  ; Set blitter to black (RGB format)
+    P.BLI.CLR
+
     P.BLI.COL 0xFF0000  ; Set blitter to white (RGB format)
 
     MOV R1 0x8
