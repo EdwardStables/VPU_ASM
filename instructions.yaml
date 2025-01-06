@@ -117,18 +117,8 @@ instructions:
 
   - name: LDW
     ops:
-      - LAB
-    desc: Load value from mem address Label to ACC.
-
-  - name: LDW
-    ops:
       - REG
     desc: Load value from mem address in REG to ACC.
-
-  - name: STW
-    ops:
-      - LAB
-    desc: Store value from ACC to address Label.
 
   - name: STW
     ops:

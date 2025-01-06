@@ -237,10 +237,13 @@ class Program:
 
     def write_out(self, path: Path, write_debug: bool):
         with path.open("wb") as f:
+            addr = 0
             for instr, line in self.output:
                 if instr < 0:
                     instr += (2**32)
+                addr += 4
                 f.write(instr.to_bytes(4,'little'))
+                assert addr < 0x100000, "Read only segment overlaps into expected writable memory region"
 
         if write_debug:
             self.write_out_debug(path)

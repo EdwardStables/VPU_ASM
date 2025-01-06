@@ -1,0 +1,9 @@
+    MOV 123
+    MOV R1 0x100000
+    STW R1
+    MOV 321
+    MOV R1 0x100004
+    STW R1
+    MOV R1 0x100000
+    LDW R1
+    HLT
