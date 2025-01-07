@@ -76,6 +76,7 @@ class InstructionFormatException(Exception): pass
 class InvalidOpcodeException(InstructionFormatException): pass
 class InvalidOperandException(InstructionFormatException): pass
 class InvalidOperandNumberException(InvalidOperandException): pass
+class IllegalRegisterException(InvalidOperandException): pass
 class InstructionDefinition:
     def __init__ (self, name, ops, flags, desc, encoding):
         self.name = name
@@ -327,6 +328,8 @@ class ISADefinition:
             optypes = []
             for i, o in enumerate(ops):
                 optypes.append(self.get_operand_type(o))
+        except IllegalRegisterException:
+            return False, (i+1, f"Register {o} is valid, but cannot be used in this context")
         except InvalidOperandException:
             return False, (i+1, f"Could not determine type of operand {o}")
         
@@ -346,6 +349,8 @@ class ISADefinition:
 
     def get_operand_type(self, operand: str) -> OperandType:
         if operand in self.registers:
+       #     if operand in ["PC", "RA", "SP"]:
+       #         raise IllegalRegisterException
             return OperandType.REG
         if operand[0].isupper() and all(i.isdigit() or i.isupper() or i == "_" for i in operand):
             return OperandType.LAB

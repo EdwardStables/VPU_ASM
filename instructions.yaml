@@ -13,6 +13,8 @@ registers:
   - R6
   - R7
   - R8
+  - RA
+  - SP
 
 flags:
   - flag: C
@@ -120,10 +122,34 @@ instructions:
       - REG
     desc: Load value from mem address in REG to ACC.
 
+  - name: LDW
+    ops:
+      - REG
+      - IMM_INT
+    desc: Load value from mem address in REG+IMM_INT to ACC.
+
+  - name: LDW
+    ops:
+      - REG
+      - REG
+    desc: Load value from mem address in REG+REG to ACC.
+
   - name: STW
     ops:
       - REG
     desc: Store value from ACC to address in REG.
+
+  - name: STW
+    ops:
+      - REG
+      - IMM_INT
+    desc: Store value from ACC to address in REG+IMM_INT.
+
+  - name: STW
+    ops:
+      - REG
+      - REG
+    desc: Store value from ACC to address in REG+REG.
 
 pipes:
   - name: sched
