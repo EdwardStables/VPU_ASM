@@ -10,6 +10,7 @@ from instructions import InstructionDefinition, ISADefinition
 from instructions import InvalidOperandException, InvalidOpcodeException, InvalidOperandNumberException
 import instructions
 from pathlib import Path
+from math import ceil
 
 class SourceLine:
     def __init__(self, file: Path, linenumber: int, source: str):
@@ -83,13 +84,43 @@ class SourceLine:
 
         return ret
             
-class Block:
-    pass
+class Data:
+    def __init__(self, path: Path):
+        if not path.exists():
+            print(f"Blob path {path} can't be found")
+            exit(1)
+        if path.is_dir():
+            print(f"Blob path {path} is a directory, not a file")
+            exit(1)
+
+        with path.open("rb") as f:
+            self.data = f.read()
+
+    def aligned_bytes(self):
+        return 4 * ceil(len(self.data) / 4)
+
+    def as_words(self):
+        ind = 0
+        while True:
+            if (ind >= len(self.data)): raise StopIteration
+            out = 0
+            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 0
+            ind += 1
+            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 8
+            ind += 1
+            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 16
+            ind += 1
+            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 24
+            ind += 1
+            yield out
+
+
 
 class Program:
-    def __init__(self, file: Path, isa: ISADefinition):
+    def __init__(self, file: Path, isa: ISADefinition, blobs: list[Data]):
         self.file = file
         self.isa = isa
+        self.blobs = blobs
         self.source_lines: list[SourceLine] = []
         with self.file.open() as f:
             for i, line in enumerate(f):
@@ -133,18 +164,22 @@ class Program:
                 print("Reached max error count, exiting.")
                 exit(1)
 
-        #4 byte reset vector
-        #4 byte region separator
-        #Followed by literal table of variable length
-        #4 byte region separator
-        program_start_address = 4 + 4 + (4*len(self.literal_ints)) + 4
+        SEPARATOR_SIZE = 4
+        SEPARATOR = (0xFFFFFFFF, -1)
+
+        RESET_VECTOR = 0 #contains pointer to program start
+        LITERAL_TABLE = SEPARATOR_SIZE+4 #contains all literals
+        BLOB_TABLE = SEPARATOR_SIZE+LITERAL_TABLE + (4*len(self.literal_ints)) #one address for each blob store
+        BLOB_STORE = SEPARATOR_SIZE+BLOB_TABLE + (4*len(self.blobs))
+        PROGRAM_START = SEPARATOR_SIZE+BLOB_STORE + sum(b.aligned_bytes() for b in self.blobs) 
+
         for label_name, sl, encoding, label_ref in self.instructions:
             if label_ref and encoding[label_ref][0] not in self.label_store:
                 print(sl.annotate(operand_index=label_ref, msg=f"Label {encoding[label_ref][0]} is used, but not defined anywhere in the program."))
                 error_count += 1
             elif label_ref:
                 #mult by 4 to account for alignment
-                encoding[label_ref] = (4*self.label_store[encoding[label_ref][0]] + program_start_address,encoding[label_ref][1])
+                encoding[label_ref] = (4*self.label_store[encoding[label_ref][0]] + PROGRAM_START,encoding[label_ref][1])
 
         if error_count:
             print("Encoding generation completed with errors, exiting.")
@@ -153,17 +188,33 @@ class Program:
         #At this point we have confidence all instructions are well-formed and all labels are valid
         self.output = []
         # reset vector
-        self.output.append((program_start_address,-1)) 
-        # region separator
-        self.output.append((0xFFFFFFFF,-1))
+        self.output.append((PROGRAM_START,-1)) 
+        self.output.append(SEPARATOR) 
 
         # constant table
         for i, (value, index) in enumerate(self.literal_ints.items()):
             assert i == index, "Expected in-order iteration over literal dict"
             self.output.append((value,-1))
-        # region separator
-        self.output.append((0xFFFFFFFF,-1)) 
 
+        self.output.append(SEPARATOR) 
+
+        # blob table
+        blob_offset = 0
+        for blob in self.blobs:
+            self.output.append((BLOB_STORE + blob_offset, -1))
+            blob_offset += blob.aligned_bytes()
+
+        self.output.append(SEPARATOR) 
+
+        # blobs
+        for blob in self.blobs:
+            for word in blob.as_words():
+                self.output.append((word, -1))
+
+        self.output.append(SEPARATOR) 
+
+        assert PROGRAM_START == len(self.output)*4, f"Mismatch between expected program start and output vector length, {PROGRAM_START} vs {len(self.output)*4}"
+        
         # program
         for label_name, sl, encoding, label_ref in self.instructions:
             val = 0
@@ -177,9 +228,8 @@ class Program:
             assert total_width == 32, f"{sl.file}:{sl.linenumber+1} Got total width of {total_width}"
             self.output.append((val,sl.linenumber))
 
-        #Program region marker
-        self.output.append((0xFFFFFFFF,-1))
-        
+        self.output.append(SEPARATOR) 
+ 
     def get_encoding(self, sourceline):
         #assume all inputs are well-formed instructions, not empty or labels
         ops = [i for i in sourceline.source.split() if i]
@@ -306,7 +356,8 @@ def main():
         print("Cannot find input file", in_file)
         exit(1)
 
-    program = Program(Path(args.asm_file), isa)
+    blobs = [Data(p) for p in args.data]
+    program = Program(Path(args.asm_file), isa, blobs)
     program.write_out(Path(args.output), args.debug)
 
 if __name__ == "__main__":
