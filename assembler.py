@@ -102,15 +102,15 @@ class Data:
     def as_words(self):
         ind = 0
         while True:
-            if (ind >= len(self.data)): raise StopIteration
+            if (ind >= len(self.data)): break
             out = 0
-            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 0
+            out |= (0 if ind >= len(self.data) else int(self.data[ind])) << 0
             ind += 1
-            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 8
+            out |= (0 if ind >= len(self.data) else int(self.data[ind])) << 8
             ind += 1
-            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 16
+            out |= (0 if ind >= len(self.data) else int(self.data[ind])) << 16
             ind += 1
-            out |= (b'.\x00' if ind >= len(self.data) else self.data[ind]) << 24
+            out |= (0 if ind >= len(self.data) else int(self.data[ind])) << 24
             ind += 1
             yield out
 
@@ -168,10 +168,10 @@ class Program:
         SEPARATOR = (0xFFFFFFFF, -1)
 
         RESET_VECTOR = 0 #contains pointer to program start
-        LITERAL_TABLE = SEPARATOR_SIZE+4 #contains all literals
-        BLOB_TABLE = SEPARATOR_SIZE+LITERAL_TABLE + (4*len(self.literal_ints)) #one address for each blob store
-        BLOB_STORE = SEPARATOR_SIZE+BLOB_TABLE + (4*len(self.blobs))
-        PROGRAM_START = SEPARATOR_SIZE+BLOB_STORE + sum(b.aligned_bytes() for b in self.blobs) 
+        LITERAL_TABLE = SEPARATOR_SIZE + 4 #contains all literals
+        BLOB_TABLE =    SEPARATOR_SIZE + LITERAL_TABLE + (4*len(self.literal_ints)) #one address for each blob store
+        BLOB_STORE =    SEPARATOR_SIZE + BLOB_TABLE + (4*len(self.blobs))
+        PROGRAM_START = SEPARATOR_SIZE + BLOB_STORE + sum(b.aligned_bytes() for b in self.blobs) 
 
         for label_name, sl, encoding, label_ref in self.instructions:
             if label_ref and encoding[label_ref][0] not in self.label_store:
@@ -255,11 +255,19 @@ class Program:
                 case instructions.OperandType.LAB:
                     encoding.append((ops[i+1],24)) #Labels are always 24 bits
                     label_index = i+1
+                case instructions.OperandType.BLOB_LAB:
+                    index = int(ops[i+1][6:])
+                    if index >= len(self.blobs):
+                        msg = "Data blob index greater than number of provided blobs"
+                        msg = sourceline.annotate(operand_index=i+1, msg=msg)
+                        print(msg)
+                        return False, None, None
+                    encoding.append((index,16)) #Blob labels are indexes into the data table
                 case instructions.OperandType.IMM_INT:
                     value = imm_to_int(ops[i+1])
                     if value >= 2**32:
                         msg = f"Literal value {value} is too big for 32 bit integers"
-                        msg = sourceline.annotate(operand_index=operand_index, msg=msg)
+                        msg = sourceline.annotate(operand_index=i+1, msg=msg)
                         print(msg)
                         return False, None, None
                     literal_index = self.add_literal_int(value)
@@ -337,7 +345,7 @@ def get_args():
     isa_file = "instructions.yaml"
     parser.add_argument("asm_file", type=str, help="Input program")
     parser.add_argument("--isa", type=str, default=isa_file, help=f"Path to ISA file. Defaults to {isa_file}")
-    parser.add_argument("--data", type=str, nargs="+", help="Input data file(s)")
+    parser.add_argument("--data", type=str, nargs="+", help="Input data file(s)", default=[])
     parser.add_argument("--output", "-o", type=str, help="Output file name", default="vpu.out")
     parser.add_argument("--debug", "-d", action="store_true", help="Generate debug file alongside output object")
     return parser.parse_args()
@@ -356,7 +364,7 @@ def main():
         print("Cannot find input file", in_file)
         exit(1)
 
-    blobs = [Data(p) for p in args.data]
+    blobs = [Data(Path(p)) for p in args.data]
     program = Program(Path(args.asm_file), isa, blobs)
     program.write_out(Path(args.output), args.debug)
 

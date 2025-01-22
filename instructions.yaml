@@ -150,6 +150,12 @@ instructions:
       - REG
       - REG
     desc: Store value from ACC to address in REG+REG.
+  
+  - name: LBA
+    ops:
+      - REG
+      - BLOB_LAB
+    desc: Load the address of BLOB_LAB to REG
 
 pipes:
   - name: sched

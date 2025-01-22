@@ -11,7 +11,7 @@ from enum import IntEnum
 from PIL import Image
 from hashlib import md5
 
-OPTYPES = ["REG","LAB","IMM_INT"]
+OPTYPES = ["REG","LAB","IMM_INT","BLOB_LAB"]
 
 class FontGenerator:
     def __init__(self, path: Path):
@@ -59,6 +59,7 @@ class OperandType(IntEnum):
     REG=0
     LAB=1
     IMM_INT=2
+    BLOB_LAB=3
 
 def load_from_yaml(path: str|Path) -> dict:
     if isinstance(path, str):
@@ -138,6 +139,7 @@ class InstructionArray:
                 if op == "REG": ops.append(OperandType.REG)
                 elif op == "LAB": ops.append(OperandType.LAB)
                 elif op == "IMM_INT": ops.append(OperandType.IMM_INT)
+                elif op == "BLOB_LAB": ops.append(OperandType.BLOB_LAB)
 
             flags = instr.get("flags", [])
             for f in flags:
@@ -354,6 +356,8 @@ class ISADefinition:
             return OperandType.REG
         if operand[0].isupper() and all(i.isdigit() or i.isupper() or i == "_" for i in operand):
             return OperandType.LAB
+        if operand.startswith(".DATA.") and all(i.isdigit() for i in operand[6:]):
+            return OperandType.BLOB_LAB
         if operand[0].isdigit() or (len(operand) > 1 and operand[0] == "-"):
             negative = operand[0] == "-"
             val = operand if not negative else operand[1:]
