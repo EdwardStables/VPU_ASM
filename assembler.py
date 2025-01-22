@@ -173,6 +173,14 @@ class Program:
         BLOB_STORE =    SEPARATOR_SIZE + BLOB_TABLE + (4*len(self.blobs))
         PROGRAM_START = SEPARATOR_SIZE + BLOB_STORE + sum(b.aligned_bytes() for b in self.blobs) 
 
+
+        for i,(nln,sl,encoding,ref) in enumerate(self.instructions):
+            new_encoding = []
+            for op,width,blob_offset in encoding:
+                new_code = (op+BLOB_TABLE) if blob_offset else op
+                new_encoding.append((new_code,width))
+            self.instructions[i] = (nln,sl,new_encoding,ref)
+
         for label_name, sl, encoding, label_ref in self.instructions:
             if label_ref and encoding[label_ref][0] not in self.label_store:
                 print(sl.annotate(operand_index=label_ref, msg=f"Label {encoding[label_ref][0]} is used, but not defined anywhere in the program."))
@@ -247,13 +255,13 @@ class Program:
 
         instr_def = result
         label_index = 0
-        encoding = [(instr_def.encoding,8)] 
+        encoding = [(instr_def.encoding,8,False)] 
         for i, o in enumerate(instr_def.ops):
             match o:
                 case instructions.OperandType.REG:
-                    encoding.append((self.isa.get_reg_encoding(ops[i+1]),8))
+                    encoding.append((self.isa.get_reg_encoding(ops[i+1]),8,False))
                 case instructions.OperandType.LAB:
-                    encoding.append((ops[i+1],24)) #Labels are always 24 bits
+                    encoding.append((ops[i+1],24,False)) #Labels are always 24 bits
                     label_index = i+1
                 case instructions.OperandType.BLOB_LAB:
                     index = int(ops[i+1][6:])
@@ -262,7 +270,7 @@ class Program:
                         msg = sourceline.annotate(operand_index=i+1, msg=msg)
                         print(msg)
                         return False, None, None
-                    encoding.append((index,16)) #Blob labels are indexes into the data table
+                    encoding.append((index,16,True)) #Blob labels are indexes into the data table, note that they need offset
                 case instructions.OperandType.IMM_INT:
                     value = imm_to_int(ops[i+1])
                     if value >= 2**32:
@@ -274,17 +282,17 @@ class Program:
 
                     #fill up remaining space
                     width = 24 if instr_def.ops == [instructions.OperandType.IMM_INT] else 16
-                    encoding.append((literal_index,width))
+                    encoding.append((literal_index,width,False))
                 case _:
                     assert False, "Unexpected operand value"
 
         #Required for standalone instructions
         if not instr_def.ops:
-            encoding.append((0,24))
+            encoding.append((0,24,False))
         if instr_def.ops == [instructions.OperandType.REG]:
-            encoding.append((0,16))
+            encoding.append((0,16,False))
         if instr_def.ops == [instructions.OperandType.REG,instructions.OperandType.REG]:
-            encoding.append((0,8))
+            encoding.append((0,8,False))
 
         return True, encoding, label_index
 
