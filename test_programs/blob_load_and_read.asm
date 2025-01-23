@@ -1,22 +1,20 @@
     LBA R1 .DATA.0
     LDW R1 0
     STW SP 0
-    LDW R1 1
-    STW SP 1
-    LDW R1 2
-    STW SP 2
-    LDW R1 3
-    STW SP 3
     LDW R1 4
     STW SP 4
-    LDW R1 5
-    STW SP 5
-    LDW R1 6
-    STW SP 6
-    LDW R1 7
-    STW SP 7
     LDW R1 8
     STW SP 8
-    LDW R1 9
-    STW SP 9
+    LDW R1 12
+    STW SP 12
+    LDW R1 16
+    STW SP 16
+    LDW R1 20
+    STW SP 20
+    LDW R1 24
+    STW SP 24
+    LDW R1 28
+    STW SP 28
+    LDW R1 32
+    STW SP 32
     HLT
