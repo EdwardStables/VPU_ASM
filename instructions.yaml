@@ -217,4 +217,11 @@ pipes:
         desc: Write ASCII character code given by IMM_INT. ASCII values 32-126. Increments position by character width.
       - name: SWP
         desc: Swap the framebuffers, if configured. Triggers a dump of the framebuffer if switch enabled
+  - name: stream_renderer
+    prefix: REN
+    instructions:
+      - name: STR
+        ops:
+          - REG
+        desc: Render the stream object at address given by REG. Applies any configuration state already provided by previous instructions
 

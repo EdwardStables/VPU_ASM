@@ -1,0 +1,6 @@
+    LBA R1 .DATA.0
+    P.REN.STR R1
+    P.SCH.FNC
+    P.BLI.SWP
+    P.SCH.FNC
+    HLT
