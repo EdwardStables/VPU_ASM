@@ -224,4 +224,8 @@ pipes:
         ops:
           - REG
         desc: Render the stream object at address given by REG. Applies any configuration state already provided by previous instructions
+      - name: TRN
+        ops:
+          - REG
+        desc: Set the address of the object transformation matrix. Numbers in 12.4 fixed point, row major order.
 
