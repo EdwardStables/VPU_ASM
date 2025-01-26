@@ -240,8 +240,10 @@ class Program:
  
     def get_encoding(self, sourceline):
         #assume all inputs are well-formed instructions, not empty or labels
-        ops = [i for i in sourceline.source.split() if i]
-        valid, result = self.isa.match(ops[0], *ops[1:])
+        instr = [i for i in sourceline.source.split() if i]
+        code = instr[0]
+        ops = instr[1:]
+        valid, result, ops = self.isa.match(code, *ops)
         if not valid:
             operand_index, msg = result
             msg = sourceline.annotate(operand_index=operand_index, msg=msg)
@@ -259,12 +261,12 @@ class Program:
         for i, o in enumerate(instr_def.ops):
             match o:
                 case instructions.OperandType.REG:
-                    encoding.append((self.isa.get_reg_encoding(ops[i+1]),8,False))
+                    encoding.append((self.isa.get_reg_encoding(ops[i]),8,False))
                 case instructions.OperandType.LAB:
-                    encoding.append((ops[i+1],24,False)) #Labels are always 24 bits
+                    encoding.append((ops[i],24,False)) #Labels are always 24 bits
                     label_index = i+1
                 case instructions.OperandType.BLOB_LAB:
-                    index = int(ops[i+1][6:])
+                    index = int(ops[i][6:])
                     if index >= len(self.blobs):
                         msg = "Data blob index greater than number of provided blobs"
                         msg = sourceline.annotate(operand_index=i+1, msg=msg)
@@ -272,7 +274,7 @@ class Program:
                         return False, None, None
                     encoding.append((index,16,True)) #Blob labels are indexes into the data table, note that they need offset
                 case instructions.OperandType.IMM_INT:
-                    value = imm_to_int(ops[i+1])
+                    value = imm_to_int(ops[i])
                     if value >= 2**32:
                         msg = f"Literal value {value} is too big for 32 bit integers"
                         msg = sourceline.annotate(operand_index=i+1, msg=msg)

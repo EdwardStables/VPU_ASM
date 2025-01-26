@@ -1,5 +1,5 @@
 memory:
-  size: 512 #MB
+  size: 256 #MB
   width: 64 #bytes
 
 registers:
@@ -228,4 +228,68 @@ pipes:
         ops:
           - REG
         desc: Set the address of the object transformation matrix. Numbers in 12.4 fixed point, row major order.
-
+  - name: matrix
+    prefix: MAT
+    alias: # Subsystem specific ASM aliases used for compressing operation encoding
+      operation:
+          - NONE
+          - IDENTITY_MAT
+          - SET_MAT
+          - SET_MAT
+          - MULT_MAT
+          - MULT_MAT_SCALAR
+          - ADD_MAT
+          - ADD_MAT_SCALAR
+          - MULT_VEC_SCALAR
+          - ADD_VEC
+          - ADD_VEC_SCALAR
+          - VEC_MAT_MULTIPLY
+          - ROTATE
+          - TRANSLATE
+          - SCALE
+    instructions:
+      - name: SRC1
+        ops:
+          - REG
+          - IMM_INT
+        desc: Set source1 addresses for matrix operations, REG+Offset
+      - name: SRC1
+        ops:
+          - REG
+          - REG
+        desc: Set source1 addresses for matrix operations, REG+Offset
+      - name: SRC2
+        ops:
+          - REG
+          - IMM_INT
+        desc: Set source2 addresses for matrix operations, REG+Offset
+      - name: SRC2
+        ops:
+          - REG
+          - REG
+        desc: Set source2 addresses for matrix operations, REG+Offset
+      - name: DST
+        ops:
+          - REG
+          - IMM_INT
+        desc: Set the destination address for matrix operations. If 0x0 then overwrites source 1.
+      - name: ROW
+        ops:
+          - REG
+        desc: Set the access row index, 1-indexed
+      - name: ROW
+        ops:
+          - IMM_INT
+        desc: Set the access row index, 1-indexed
+      - name: COL
+        ops:
+          - REG
+        desc: Set the access col index, 1-indexed
+      - name: COL
+        ops:
+          - IMM_INT
+        desc: Set the access col index, 1-indexed
+      - name: OPR
+        ops:
+          - IMM_INT
+        desc: Execute operation provided by immediate. Aliases can be used.

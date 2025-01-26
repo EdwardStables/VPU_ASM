@@ -167,6 +167,7 @@ class Pipe:
         assert initial_encoding >= 128, "Expected pipeline instr to have MSB set"
         self.next_encoding = initial_encoding
         self.encoding_prefix = initial_encoding >> 4
+        self.aliases = {}
 
     def validate(self):
         if "name" not in self.data.keys():
@@ -175,6 +176,17 @@ class Pipe:
             return (False, f"Could not find top level pipe key 'prefix'")
         if "instructions" not in self.data.keys():
             return (False, f"Could not find top level pipe key 'instructions'")
+        if "alias" in self.data.keys():
+            a = self.data["alias"]
+            if type(a) != dict:
+                return (False, f"Alias field unexpected type: {type(a)}. Expected dict.")
+            for key, value in a.items():
+                if type(value) != list:
+                    return (False, f"Alias field {value} value is unexpected type: {type(value)}. Expected list.")
+                for v in value:
+                    if type(v) != str:
+                        return (False, f"Alias entry {v} is unexpected type: {type(v)}. Expected str.")
+
 
         self.instructions = InstructionArray(self.data["instructions"], self.next_encoding)
         valid, err = self.instructions.validate()
@@ -191,6 +203,11 @@ class Pipe:
         valid, err = self.instructions.parse(isa.flags)
         if not valid:
             return False, err
+
+        if "alias" in self.data.keys():
+            for _, value in self.data["alias"].items():
+                for i, v in enumerate(value):
+                    self.aliases[v] = i
 
         assert len(self.instructions.instructions) <= 16, "Cannot have more than 16 instructions per hardware pipe"
         self.next_encoding = self.instructions.next_encoding
@@ -312,9 +329,16 @@ class ISADefinition:
 
     def match(self, opcode_str: str, *ops) -> tuple[bool,tuple[int,str]|InstructionDefinition]:
         trial: list[InstructionDefinition] = []
-        for i in self.all_instructions():
+        aliases: dict[str,str] = {}
+        for i, pipe in self.all_instructions_and_pipes():
             if i.name == opcode_str:
                 trial.append(i)
+                
+                #Expect to only see one pipe for a matching instr, therefore only one set of aliases
+                if pipe is not None:
+                    aliases = pipe.aliases
+        
+        ops = tuple(o if o not in aliases else str(aliases[o]) for o in ops)
         
         if not trial:
             return False, (0, f"Unknown opcode '{opcode_str}'")
@@ -345,9 +369,9 @@ class ISADefinition:
                 expected.append('['+(','.join([OPTYPES[ot] for ot in exp.ops])) + ']')
             expected = " or ".join(expected)
             msg += f"Got: [{','.join(found)}]. Expected {expected}"
-            return False, (1, msg)
+            return False, (1, msg), ops
 
-        return True, filtered_trial[0]
+        return True, filtered_trial[0], ops
 
     def get_operand_type(self, operand: str) -> OperandType:
         if operand in self.registers:
@@ -379,7 +403,14 @@ class ISADefinition:
             yield i
         for p in self.pipes:
             for i in p.instructions.instr_gen():
-                yield i            
+                yield i
+
+    def all_instructions_and_pipes(self):
+        for i in self.instructions.instr_gen():
+            yield i, None
+        for p in self.pipes:
+            for i in p.instructions.instr_gen():
+                yield i, p
 
         
 from jinja2 import Environment, FileSystemLoader
