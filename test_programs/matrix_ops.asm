@@ -18,11 +18,11 @@
     P.MAT.SRC1 SP 0
     P.MAT.DST SP 8
     P.MAT.OPR ADD_VEC_SCALAR
-    ADD 4           ; Add 4 to first row and copy to 2nd row
+    ADD 4           ; Add 4 to first row and copy to 3rd row
     P.MAT.SRC1 SP 0
     P.MAT.DST SP 16
     P.MAT.OPR ADD_VEC_SCALAR
-    ADD 4           ; Add 4 to first row and copy to 2nd row
+    ADD 4           ; Add 4 to first row and copy to 4th row
     P.MAT.SRC1 SP 0
     P.MAT.DST SP 24
     P.MAT.OPR ADD_VEC_SCALAR
