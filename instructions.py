@@ -341,12 +341,12 @@ class ISADefinition:
         ops = tuple(o if o not in aliases else str(aliases[o]) for o in ops)
         
         if not trial:
-            return False, (0, f"Unknown opcode '{opcode_str}'")
+            return False, (0, f"Unknown opcode '{opcode_str}'"), ops
 
         filtered_trial = [t for t in trial if len(t.ops) == len(ops)]
 
         if not filtered_trial:
-            return False, (1, f"Invalid number of operands ({len(ops)}) for opcode {opcode_str}.")
+            return False, (1, f"Invalid number of operands ({len(ops)}) for opcode {opcode_str}."), ops
         trial = filtered_trial
 
 
@@ -355,9 +355,9 @@ class ISADefinition:
             for i, o in enumerate(ops):
                 optypes.append(self.get_operand_type(o))
         except IllegalRegisterException:
-            return False, (i+1, f"Register {o} is valid, but cannot be used in this context")
+            return False, (i+1, f"Register {o} is valid, but cannot be used in this context"), ops
         except InvalidOperandException:
-            return False, (i+1, f"Could not determine type of operand {o}")
+            return False, (i+1, f"Could not determine type of operand {o}"), ops
         
         filtered_trial = [t for t in trial if (t.ops == optypes)]
 
