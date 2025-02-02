@@ -11,17 +11,21 @@
 
 
     P.MAT.DST SP 0     ; Translation vector at SP+0 
-    P.MAT.COL 2        ; Set it to Y=90
-    MOV ACC 0x900
+    P.MAT.COL 2        ; offset y
+    MOV ACC 0x800
     P.MAT.OPR SET_VEC
     P.MAT.DST SP 0     ; Translation vector at SP+0 
-    P.MAT.COL 1        ; Set it to X=88
-    MOV ACC 0x580
+    P.MAT.COL 1        ; offset x
+    MOV ACC 0x780
     P.MAT.OPR SET_VEC
     
     P.MAT.DST SP 0x10  ; Object offset vector
-    P.MAT.COL 1        ; Set it to Z=-30
-    MOV ACC -480
+    P.MAT.COL 2        ; Set it to Y=-39
+    MOV ACC -624
+    P.MAT.OPR SET_VEC
+    P.MAT.DST SP 0x10  ; Object offset vector
+    P.MAT.COL 1        ; Set it to X=-63
+    MOV ACC -1008
     P.MAT.OPR SET_VEC
     
     ; Rotation vector at SP+8, starts valued at zero
@@ -31,26 +35,30 @@
 
 LOOP:
     P.MAT.DST SP 8     ; Rotation vector at SP+8
-    P.MAT.COL 1        ; Changing X
+    P.MAT.COL 2        ; Changing Y
     MOV ACC R7         ; Rotate by the value in R7
     P.MAT.OPR SET_VEC
-    P.SCH.FNC
+    P.MAT.DST SP 8     ; Rotation vector at SP+8
+    P.MAT.COL 1        ; Account for model orientation by changing X
+    MOV ACC 0x8        ; Rotate by 90 degrees
+    P.MAT.OPR SET_VEC
     
     P.MAT.DST SP 0x18  ; Actual translation is at SP+0x18
     P.MAT.OPR IDENTITY_MAT
     
-    ;P.MAT.SRC1 SP 0x10      ; Object local translation to change axis
-    ;P.MAT.SRC2 SP 0x18
-    ;P.MAT.DST SP 0x10
-    ;P.MAT.OPR TRANSLATE
-    P.MAT.SRC1 SP 0      ; Then translation
-    P.MAT.SRC2 SP 0x10
-    P.MAT.DST SP 0x10
+    ; Note that we have row vectors, therefore order of matrices is inverted compared to "standard"
+    P.MAT.SRC1 SP 0      ; Object position
+    P.MAT.SRC2 SP 0x18
+    P.MAT.DST SP 0x18
     P.MAT.OPR TRANSLATE
-    P.MAT.SRC1 SP 0x8    ; Then 
+    P.MAT.SRC1 SP 0x8    ; Then rotation
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR ROTATE
+    P.MAT.SRC1 SP 0x10   ; Offset object's own axis
+    P.MAT.SRC2 SP 0x18
+    P.MAT.DST SP 0x18
+    P.MAT.OPR TRANSLATE
 
     MOV ACC SP     ; Result of transformation matrices is at SP+0x10
     ADD 0x18
