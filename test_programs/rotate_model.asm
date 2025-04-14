@@ -20,20 +20,17 @@
     MOV ACC 0x780
     P.MAT.OPR SET_VEC
     
-    ; Adjust rotation vector by (0.5,0,0) to account for model orientation
-    P.MAT.DST SP 8
-    P.MAT.COL 1        ; Account for model orientation by changing X
-    MOV ACC 0x8        ; Rotate by 90 degrees
-    P.MAT.OPR SET_VEC
-    
-    ; Adjust offset vector by (-39,-63,0) (model center)
+    ; Adjust offset vector by (-39,-63,-30) (model center)
     P.MAT.DST SP 0x10
+    P.MAT.DST SP 0x10
+    P.MAT.COL 1        ; Set it to X=-63
+    MOV ACC -1000
+    P.MAT.OPR SET_VEC
     P.MAT.COL 2        ; Set it to Y=-39
     MOV ACC -624
     P.MAT.OPR SET_VEC
-    P.MAT.DST SP 0x10
-    P.MAT.COL 1        ; Set it to X=-63
-    MOV ACC -1008
+    P.MAT.COL 3        ; Set it to Z=-30
+    MOV ACC -480
     P.MAT.OPR SET_VEC
     
     ; Clear screen to black
@@ -43,8 +40,10 @@
 LOOP:
     ; Update rotation vector each loop
     P.MAT.DST SP 8     ; Rotation vector at SP+8
-    P.MAT.COL 2        ; Changing Y
     MOV ACC R7         ; Rotate by the value in R7
+    P.MAT.COL 1        ; Changing X
+    P.MAT.OPR SET_VEC
+    P.MAT.COL 2        ; Changing Y
     P.MAT.OPR SET_VEC
     
     ; Set the location of the actual transformation matrix to be SP=0x18
@@ -53,18 +52,15 @@ LOOP:
     P.MAT.OPR IDENTITY_MAT
     
     ; Apply the prepared translation, rotation, and offset vectors
-    ; Note that we use row vectors, therefore order of matrices is inverted compared to "standard"
-    P.MAT.SRC1 SP 0      ; Object position
+    P.MAT.SRC1 SP 0x10   ; Offset
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR TRANSLATE
-
-    P.MAT.SRC1 SP 0x8    ; Then rotation
+    P.MAT.SRC1 SP 0x8    ; Rotation
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR ROTATE
-    
-    P.MAT.SRC1 SP 0x10   ; Offset object's own axis
+    P.MAT.SRC1 SP 0      ; Translation
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR TRANSLATE
