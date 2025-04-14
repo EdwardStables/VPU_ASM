@@ -10,11 +10,11 @@
     ; Adjust translation vector by (78,80,0)
     P.MAT.DST SP 0
     P.MAT.COL 2        ; offset y by 80
-    MOV ACC 0x800
+    MOV ACC 0x500
     P.MAT.OPR SET_VEC
     P.MAT.DST SP 0
     P.MAT.COL 1        ; offset x by 78
-    MOV ACC 0x780
+    MOV ACC 0x4E0
     P.MAT.OPR SET_VEC
     
     ; Clear screen to black
@@ -26,6 +26,7 @@ LOOP:
     ; Set scale vector to (1,1,1) 
     P.MAT.DST SP 0x8
     MOV ACC R7
+    LSL 4
     P.MAT.COL 1
     P.MAT.OPR SET_VEC
     P.MAT.COL 2
