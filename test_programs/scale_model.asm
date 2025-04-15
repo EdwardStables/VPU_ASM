@@ -1,22 +1,10 @@
     MOV 0       ; Ensure vectors are all zeroed
-    STW SP 0    ; Translation Vector X,Y
-    STW SP 4    ;                    Z,W
-    STW SP 8    ; Scale Vector       X,Y
-    STW SP 12   ;                    Z,W
+    STW SP 0    ; Scale Vector X,Y
+    STW SP 4    ;              Z,W
 
     MOV R8 8    ; Final increment
     MOV R7 1    ; Start increment
 
-    ; Adjust translation vector by (78,80,0)
-    P.MAT.DST SP 0
-    P.MAT.COL 2        ; offset y by 80
-    MOV ACC 0x500
-    P.MAT.OPR SET_VEC
-    P.MAT.DST SP 0
-    P.MAT.COL 1        ; offset x by 78
-    MOV ACC 0x4E0
-    P.MAT.OPR SET_VEC
-    
     ; Clear screen to black
     P.BLI.COL 0x0
     P.SCH.FNC
@@ -24,7 +12,7 @@
 LOOP:
     ; Update scale vector each loop
     ; Set scale vector to (1,1,1) 
-    P.MAT.DST SP 0x8
+    P.MAT.DST SP 0x0
     MOV ACC R7
     LSL 4
     P.MAT.COL 1
@@ -40,14 +28,10 @@ LOOP:
     P.MAT.OPR IDENTITY_MAT
     
     ; Apply the prepared translation, rotation, and offset vectors
-    P.MAT.SRC1 SP 0x8    ; Scale
+    P.MAT.SRC1 SP 0x0    ; Scale
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR SCALE
-    P.MAT.SRC1 SP 0      ; Translation
-    P.MAT.SRC2 SP 0x18
-    P.MAT.DST SP 0x18
-    P.MAT.OPR TRANSLATE
 
     ; Submit the transformation to the render pipe
     MOV ACC SP

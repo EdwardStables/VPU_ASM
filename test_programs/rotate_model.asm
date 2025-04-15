@@ -22,7 +22,6 @@
     
     ; Adjust offset vector by (-39,-63,-30) (model center)
     P.MAT.DST SP 0x10
-    P.MAT.DST SP 0x10
     P.MAT.COL 1        ; Set it to X=-63
     MOV ACC -1000
     P.MAT.OPR SET_VEC
