@@ -33,8 +33,19 @@ constexpr uint32_t FRAMEBUFFER_PIXEL_BITS = 8 * FRAMEBUFFER_PIXEL_BYTES; //RGBA 
 constexpr uint32_t BLITTER_MAX_PIXELS = (MEM_ACCESS_WIDTH*8)/FRAMEBUFFER_PIXEL_BITS; //How many pixels blitter can set per cycle
 constexpr bool DOUBLEBUFFERED = false;
 constexpr uint32_t FRAMEBUFFER_BYTES = (DOUBLEBUFFERED ? 2 : 1) * FRAMEBUFFER_PIXEL_BYTES * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH;
-constexpr uint32_t FRAMEBUFFER_ADDR = (MEM_SIZE - FRAMEBUFFER_BYTES) & 0xFFFF0000;
+constexpr uint32_t FRAMEBUFFER_ADDR = (MEM_SIZE - FRAMEBUFFER_BYTES) & 0xFFF80000;
 static_assert(FRAMEBUFFER_BYTES < MEM_SIZE / 4, "Framebuffer size would take up more than 1/4 of available memory");
+static_assert(FRAMEBUFFER_ADDR, "Framebuffer start address exceeds bounds of memory");
+static_assert(FRAMEBUFFER_ADDR + FRAMEBUFFER_BYTES < MEM_SIZE, "Framebuffer exceeds bounds of memory");
+
+//Depthbuffer
+constexpr uint32_t DEPTHBUFFER_DEPTH_BYTES = 2;
+constexpr uint32_t DEPTHBUFFER_BYTES = DEPTHBUFFER_DEPTH_BYTES * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH;
+constexpr uint32_t DEPTHBUFFER_ADDR = FRAMEBUFFER_ADDR + FRAMEBUFFER_BYTES;
+static_assert(DEPTHBUFFER_ADDR >= FRAMEBUFFER_ADDR+FRAMEBUFFER_BYTES, "Depthbuffer overlaps framebuffer");
+static_assert(DEPTHBUFFER_ADDR < MEM_SIZE, "Depthbuffer start address exceeds bounds of memory");
+static_assert(DEPTHBUFFER_ADDR + DEPTHBUFFER_BYTES < MEM_SIZE, "Depthbuffer exceeds bounds of memory");
+
 
 //Branch Prediction
 const uint32_t BHT_SIZE = 16;
