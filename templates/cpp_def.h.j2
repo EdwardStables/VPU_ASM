@@ -39,7 +39,7 @@ static_assert(FRAMEBUFFER_ADDR, "Framebuffer start address exceeds bounds of mem
 static_assert(FRAMEBUFFER_ADDR + FRAMEBUFFER_BYTES < MEM_SIZE, "Framebuffer exceeds bounds of memory");
 
 //Depthbuffer
-constexpr uint32_t DEPTHBUFFER_DEPTH_BYTES = 2;
+constexpr uint32_t DEPTHBUFFER_DEPTH_BYTES = 1;
 constexpr uint32_t DEPTHBUFFER_BYTES = DEPTHBUFFER_DEPTH_BYTES * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH;
 constexpr uint32_t DEPTHBUFFER_ADDR = FRAMEBUFFER_ADDR + FRAMEBUFFER_BYTES;
 static_assert(DEPTHBUFFER_ADDR >= FRAMEBUFFER_ADDR+FRAMEBUFFER_BYTES, "Depthbuffer overlaps framebuffer");
