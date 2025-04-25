@@ -1,92 +1,95 @@
-    MOV 0       ; Ensure vectors are all zeroed
-    STW SP 0    ; Translation Vector X,Y
-    STW SP 4    ;                    Z,W
-    STW SP 8    ; Rotation Vector    X,Y
-    STW SP 12   ;                    Z,W
-    STW SP 16   ; Offset Vector      X,Y
-    STW SP 20   ; (account for rotation center) Z,W
+    MOV 0       ; Ensure vectors at SP is zeroed
+    STW SP 0x0
+    STW SP 0x4
+    STW SP 0x8
+    STW SP 0xC
+    STW SP 0x10
+    STW SP 0x14
 
-    MOV R8 32  ; Final increment
-    MOV R7 0   ; Start increment
-
-
-    ; Adjust translation vector by (78,80,0)
+    ; Set translation vector (150,100,100)
     P.MAT.DST SP 0
-    P.MAT.COL 2        ; offset y by 80
-    MOV ACC 0x800
+    MOV ACC 150
+    LSL 4
+    P.MAT.COL 1
     P.MAT.OPR SET_VEC
-    P.MAT.DST SP 0
-    P.MAT.COL 1        ; offset x by 78
-    MOV ACC 0x780
+    MOV ACC 100
+    LSL 4
+    P.MAT.COL 2
+    P.MAT.OPR SET_VEC
+    MOV ACC 100
+    LSL 4
+    P.MAT.COL 3
     P.MAT.OPR SET_VEC
     
-    ; Adjust offset vector by (-39,-63,-30) (model center)
+    ; Set rotation vector (pi/2,0,0)
+    P.MAT.DST SP 0x8
+    MOV ACC 8
+    P.MAT.COL 1
+    P.MAT.OPR SET_VEC
+    
+    ; Set offset vector (-63,-40,-30)
     P.MAT.DST SP 0x10
-    P.MAT.COL 1        ; Set it to X=-63
-    MOV ACC -1000
+    MOV ACC -63
+    LSL 4
+    P.MAT.COL 1
     P.MAT.OPR SET_VEC
-    P.MAT.COL 2        ; Set it to Y=-39
-    MOV ACC -624
+    MOV ACC -40
+    LSL 4
+    P.MAT.COL 2
     P.MAT.OPR SET_VEC
-    P.MAT.COL 3        ; Set it to Z=-30
-    MOV ACC -480
+    MOV ACC -30
+    LSL 4
+    P.MAT.COL 3
     P.MAT.OPR SET_VEC
-    
-    ; Clear screen to black
-    P.BLI.COL 0x0
-    P.SCH.FNC
 
+    MOV R8 31
+    MOV R7 0
+    
 LOOP:
-    ; Update rotation vector each loop
-    P.MAT.DST SP 8     ; Rotation vector at SP+8
-    MOV ACC R7         ; Rotate by the value in R7
-    P.MAT.COL 1        ; Changing X
+    ; Set rotation vector, rotate around y every frame
+    P.MAT.DST SP 8
+    MOV ACC R7
+    P.MAT.COL 2
     P.MAT.OPR SET_VEC
-    P.MAT.COL 2        ; Changing Y
-    P.MAT.OPR SET_VEC
-    
-    ; Set the location of the actual transformation matrix to be SP=0x18
-    ; and initialise to the identity matrix
-    P.MAT.DST SP 0x18
-    P.MAT.OPR IDENTITY_MAT
-    
-    ; Apply the prepared translation, rotation, and offset vectors
-    P.MAT.SRC1 SP 0x10   ; Offset
+
+    P.MAT.DST SP 0x18      ; Writing just past the vector
+    P.MAT.OPR IDENTITY_MAT ; Set to identity
+    P.MAT.SRC1 SP 0x10     ; Update with the offset
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR TRANSLATE
-    P.MAT.SRC1 SP 0x8    ; Rotation
+    P.MAT.SRC1 SP 8       ; Update with the rotation
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR ROTATE
-    P.MAT.SRC1 SP 0      ; Translation
+    P.MAT.SRC1 SP 0       ; Update with the translation
     P.MAT.SRC2 SP 0x18
     P.MAT.DST SP 0x18
     P.MAT.OPR TRANSLATE
 
-    ; Submit the transformation to the render pipe
-    MOV ACC SP
+    P.SCH.FNC
+
+    MOV ACC SP           ; Apply the translation and do the draw call
     ADD 0x18
     P.REN.TRN ACC
+    LBA R1 .DATA.0
 
-    ; Drive the render itself
-    LBA R1 .DATA.0 ; Get the location of the object
-    P.BLI.CLR      ; Clear the screen (could be earlier to avoid less blank cycles)
-    P.SCH.FNC      ; Fence the clear
-    P.REN.STR R1   ; Stream render operation
-    P.SCH.FNC      ; Wait for this to finish
-    P.BLI.SWP      ; Buffer swap (in simulation drives image dump)
+    ; Render frame
+    P.BLI.COL 0
+    P.BLI.CLR
+    P.SCH.FNC
+    P.REN.STR R1
+    P.SCH.FNC
+    P.BLI.SWP
 
-    ; Update the rotation counter
+    ; Loop update
+    CMP R7 R8
+    BRA END
     MOV ACC R7
     ADD 1
     MOV R7 ACC
-    
-    ; Loop terminates after a full rotation
-    CMP R7 R8
-    BRA END
     JMP LOOP
-
+    
 END:
     P.SCH.FNC
     HLT
