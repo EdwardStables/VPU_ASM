@@ -1,0 +1,87 @@
+{{ warning }}
+
+package vpu_defs_pkg;
+
+//Configuration
+localparam RESET_VECTOR_ADDR  = 0;
+localparam LITERAL_TABLE_ADDR = 8;
+localparam REGISTER_COUNT     = {{registers|length}};
+localparam FLAG_COUNT         = {{flags|length}};
+localparam SEGMENT_END        = 32'hFFFFFFFF;
+localparam MAX_OPCODE_LEN     = {{max_opcode_len}};
+localparam MEM_SIZE           = {{mem_size_mb}} * 1024 * 1024;
+localparam MEM_ACCESS_WIDTH   = {{mem_access_width_bytes}}; //Used by DMA and mem heirarchy
+localparam DWORD_W            = 32;
+typedef logic [DWORD_W-1:0] dword;
+
+//Framebuffer
+localparam FRAMEBUFFER_WIDTH       = 300;
+localparam FRAMEBUFFER_HEIGHT      = 200;
+localparam FRAMEBUFFER_PIXEL_BYTES = 4; //RGBA
+localparam FRAMEBUFFER_PIXEL_BITS  = 8 * FRAMEBUFFER_PIXEL_BYTES; //RGBA 8bit
+localparam BLITTER_MAX_PIXELS      = (MEM_ACCESS_WIDTH*8)/FRAMEBUFFER_PIXEL_BITS; //How many pixels blitter can set per cycle
+localparam DOUBLEBUFFERED          = 0;
+localparam FRAMEBUFFER_BYTES       = (DOUBLEBUFFERED ? 2 : 1) * FRAMEBUFFER_PIXEL_BYTES * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH;
+localparam FRAMEBUFFER_ADDR        = (MEM_SIZE - FRAMEBUFFER_BYTES) & 32'hFFF80000;
+
+//Depthbuffer
+localparam DEPTHBUFFER_DEPTH_BYTES = 1;
+localparam DEPTHBUFFER_BYTES       = DEPTHBUFFER_DEPTH_BYTES * FRAMEBUFFER_HEIGHT * FRAMEBUFFER_WIDTH;
+localparam DEPTHBUFFER_ADDR        = FRAMEBUFFER_ADDR + FRAMEBUFFER_BYTES;
+
+//Branch Prediction
+localparam BHT_SIZE      = 16;
+localparam BHT_SIZE_LOG2 = 4;
+localparam BTB_SIZE      = 4;
+localparam BTB_SIZE_LOG2 = 2;
+
+function dword get_bht_tag (dword addr);
+    return (BHT_SIZE-1) & (addr >> 2);
+endfunction
+
+function dword get_btb_tag (dword addr);
+    return (BTB_SIZE-1) & (addr >> 2);
+endfunction
+
+typedef enum logic [$clog2({{registers|length}})-1:0] { {% for r in registers %}
+    {{r}} = {{loop.index0}}{% if not loop.last%},{% endif %}{% endfor %}
+} Register;
+
+typedef enum logic [$clog2({{flags|length}})-1:0] { {% for f in flags %}
+    {{f}} = {{loop.index0}}{% if not loop.last%},{% endif %}{% endfor %}
+} Flags;
+
+typedef enum logic [8-1:0] { {% for i in instructions %}
+    {{i.internal_name}} = {{i.encoding}}{% if not loop.last%},{% endif %}{% endfor %}
+} Opcode;
+
+function Opcode get_opcode(dword instr);
+    return Opcode'(instr[$left(instr) -: 8]);
+endfunction
+
+function dword get_label(dword instr);
+    return 32'hFFFFFF & instr;
+endfunction
+
+function Register get_register(dword instr, logic index);
+    if (index == 1'b0)
+        return Register'(32'hFF & (instr >> 16));
+    else
+        return Register'(32'hFF & (instr >> 8));
+endfunction
+
+localparam SCHEDULER_FRONTEND_QUEUE_SIZE = 4;
+typedef enum logic [4-1:0] { {% for p in pipes %}
+    {{p.name|upper}} = {{p.encoding_prefix}}{% if not loop.last%},{% endif %}{% endfor %}
+} Pipe;
+
+function Pipe opcode_to_pipe(Opcode opcode);
+    return Pipe'(opcode >> 4);
+endfunction
+
+localparam logic [63:0] ASCII_TABLE [95:0] = { {% for glyph in ascii_glyphs %}
+    {{glyph}}{% if not loop.last%},{% endif %}{% endfor %}
+};
+
+endpackage;
+
