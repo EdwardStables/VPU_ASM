@@ -2,6 +2,8 @@
 
 package vpu_defs_pkg;
 
+/* verilator lint_off UNUSEDPARAM */
+
 //Configuration
 localparam RESET_VECTOR_ADDR  = 0;
 localparam LITERAL_TABLE_ADDR = 8;
@@ -13,6 +15,8 @@ localparam MEM_SIZE           = {{mem_size_mb}} * 1024 * 1024;
 localparam MEM_ACCESS_WIDTH   = {{mem_access_width_bytes}}; //Used by DMA and mem heirarchy
 localparam DWORD_W            = 32;
 typedef logic [DWORD_W-1:0] dword;
+typedef logic [32:5] maddr_t;
+typedef logic [MEM_ACCESS_WIDTH*8-1:0] mdata_t;
 
 //Framebuffer
 localparam FRAMEBUFFER_WIDTH       = 300;
@@ -82,6 +86,8 @@ endfunction
 localparam logic [63:0] ASCII_TABLE [95:0] = { {% for glyph in ascii_glyphs %}
     {{glyph}}{% if not loop.last%},{% endif %}{% endfor %}
 };
+
+/* verilator lint_on UNUSEDPARAM */
 
 endpackage;
 
