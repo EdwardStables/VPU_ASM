@@ -14,11 +14,13 @@ localparam MAX_OPCODE_LEN     = {{max_opcode_len}};
 localparam MEM_SIZE           = {{mem_size_mb}} * 1024 * 1024;
 localparam MEM_ACCESS_WIDTH   = {{mem_access_width_bytes}}; //Used by DMA and mem heirarchy
 localparam DWORD_W            = 32;
-localparam MEM_TAG_W          = 8;
 typedef logic [DWORD_W-1:0] dword;
 typedef logic [31:5] maddr_64B_t;
 typedef logic [31:2] maddr_4B_t;
 typedef logic [MEM_ACCESS_WIDTH*8-1:0] mdata_t;
+
+//Memory tags - general purpose per subsystem, collisions not possible between subsystems
+localparam MEM_TAG_W = 8;
 typedef logic [MEM_TAG_W-1:0] mtag_t;
 
 //Framebuffer
