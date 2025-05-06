@@ -58,7 +58,7 @@ typedef enum logic [$clog2({{registers|length}})-1:0] { {% for r in registers %}
 
 typedef enum logic [$clog2({{flags|length}})-1:0] { {% for f in flags %}
     {{f}} = {{loop.index0}}{% if not loop.last%},{% endif %}{% endfor %}
-} Flags;
+} Flag;
 
 typedef enum logic [8-1:0] { {% for i in instructions %}
     {{i.internal_name}} = {{i.encoding}}{% if not loop.last%},{% endif %}{% endfor %}
