@@ -64,6 +64,11 @@ typedef enum logic [8-1:0] { {% for i in instructions %}
     {{i.internal_name}} = {{i.encoding}}{% if not loop.last%},{% endif %}{% endfor %}
 } Opcode;
 
+typedef enum logic {
+    MEM_OP_LOAD,
+    MEM_OP_STORE
+} mop_t;
+
 function Opcode get_opcode(dword instr);
     instr = instr;
     return Opcode'(instr[$left(instr) -: 8]);
