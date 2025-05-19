@@ -64,9 +64,11 @@ typedef enum logic [8-1:0] { {% for i in instructions %}
     {{i.internal_name}} = {{i.encoding}}{% if not loop.last%},{% endif %}{% endfor %}
 } Opcode;
 
-typedef enum logic {
-    MEM_OP_LOAD,
-    MEM_OP_STORE
+typedef enum logic [1:0] {
+    MEM_OP_LOAD,      //Load address
+    MEM_OP_STORE,     //Store address
+    MEM_OP_FLUSH,     //Writeback all dirty lines
+    MEM_OP_INVALIDATE //Invalidate all cache lines
 } mop_t;
 
 function Opcode get_opcode(dword instr);
