@@ -23,6 +23,14 @@ typedef logic [MEM_ACCESS_WIDTH*8-1:0] mdata_t;
 localparam MEM_TAG_W = 8;
 typedef logic [MEM_TAG_W-1:0] mtag_t;
 
+//General tag case - 5 bits for subsystem identification, subrequestors can be set with the three remaining bits
+//Value choice allows grouping to select between them more easily
+localparam mtag_t MEM_TAG_CORE      = 8'b00000000;
+localparam mtag_t MEM_TAG_DMA       = 8'b01000000;
+localparam mtag_t MEM_TAG_BLITTER   = 8'b01001000;
+localparam mtag_t MEM_TAG_RENDERER  = 8'b01010000;
+localparam mtag_t MEM_TAG_MATRIX    = 8'b01011000;
+
 //Framebuffer
 localparam FRAMEBUFFER_WIDTH       = 300;
 localparam FRAMEBUFFER_HEIGHT      = 200;
