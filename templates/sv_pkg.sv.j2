@@ -104,9 +104,11 @@ function Pipe opcode_to_pipe(Opcode opcode);
     return Pipe'(opcode >> 4);
 endfunction
 
-localparam logic [63:0] ASCII_TABLE [95:0] = { {% for glyph in ascii_glyphs %}
-    {{glyph}}{% if not loop.last%},{% endif %}{% endfor %}
-};
+function logic[63:0] get_ascii_mask (logic [6:0] index);
+    case(index) {% for glyph in ascii_glyphs %}
+        {% if not loop.last %}{{loop.index - 1}}: return {{glyph}}{% else %}default: return {{ascii_glyphs[95]}}{% endif %};{% endfor %}
+    endcase
+endfunction
 
 /* verilator lint_on UNUSEDPARAM */
 
