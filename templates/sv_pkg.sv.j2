@@ -106,7 +106,7 @@ endfunction
 
 function logic[63:0] get_ascii_mask (logic [6:0] index);
     case(index) {% for glyph in ascii_glyphs %}
-        {% if not loop.last %}{{loop.index - 1}}: return {{glyph}}{% else %}default: return {{ascii_glyphs[95]}}{% endif %};{% endfor %}
+        {% if not loop.last %}{{32 + loop.index - 1}}: return {{glyph}}{% else %}default: return {{ascii_glyphs[95]}}{% endif %};{% endfor %}
     endcase
 endfunction
 
